@@ -1,7 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="ae2399ca-69d1-4317-8d9a-0eef10e1205a" name="Default Changelist" comment="" />
+    <list default="true" id="ae2399ca-69d1-4317-8d9a-0eef10e1205a" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/se/abjorklund/jna/BITMAP.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/se/abjorklund/jna/GDI32Ex.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/se/abjorklund/jna/IKernel32.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/handmade-java/se/abjorklund/Main2$Win32RenderingType.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/handmade-java/se/abjorklund/Main2.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/handmade-java/se/abjorklund/jna/IGDI32.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/handmade-java/se/abjorklund/jna/IGDI32.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/handmade-java/se/abjorklund/win32/Win32.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/handmade-java/se/abjorklund/win32/Win32State.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/se/abjorklund/Main2.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/se/abjorklund/Win32Platform.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/se/abjorklund/jna/IGDI32.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/se/abjorklund/jna/IGDI32.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/se/abjorklund/jna/IUser32.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/se/abjorklund/jna/IUser32.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/se/abjorklund/win32/Win32.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/se/abjorklund/win32/Win32State.java" beforeDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -15,16 +31,21 @@
       </list>
     </option>
   </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="ggajntvq" />
   </component>
   <component name="ProjectId" id="1axdSKpdHDZYZFfUu4ZWXxCfYdK" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showExcludedFiles" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/jna-lib/jna-platform.jar!/" />
     <property name="project.structure.last.edited" value="Libraries" />
     <property name="project.structure.proportion" value="0.15" />
@@ -35,7 +56,7 @@
       <recent name="se.abjorklund" />
     </key>
   </component>
-  <component name="RunManager" selected="Application.Main2">
+  <component name="RunManager" selected="Application.Win32Platform">
     <configuration name="Main" type="Application" factoryName="Application" temporary="true">
       <option name="MAIN_CLASS_NAME" value="se.abjorklund.Main" />
       <module name="handmade-java" />
@@ -58,8 +79,8 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
-    <configuration name="Main2" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
-      <option name="MAIN_CLASS_NAME" value="se.abjorklund.Main2" />
+    <configuration name="Win32Platform" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="se.abjorklund.Win32Platform" />
       <module name="handmade-java" />
       <extension name="coverage">
         <pattern>
@@ -73,7 +94,7 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Application.Main2" />
+        <item itemvalue="Application.Win32Platform" />
         <item itemvalue="Application.Main2 (1)" />
         <item itemvalue="Application.Main" />
       </list>
@@ -109,50 +130,62 @@
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="414" y="176" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1920.1040@0.0.1920.1040" timestamp="1587716356721" />
-    <state x="765" y="230" key="#com.intellij.ide.util.MemberChooser" timestamp="1588869693051">
+    <state x="765" y="230" key="#com.intellij.ide.util.MemberChooser" timestamp="1589134556144">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="765" y="230" key="#com.intellij.ide.util.MemberChooser/0.0.1920.1040@0.0.1920.1040" timestamp="1588869693051" />
+    <state x="765" y="230" key="#com.intellij.ide.util.MemberChooser/0.0.1920.1040@0.0.1920.1040" timestamp="1589134556144" />
+    <state x="840" y="274" key="#xdebugger.XInspectDialog" timestamp="1589280914134">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="840" y="274" key="#xdebugger.XInspectDialog/0.0.1920.1040@0.0.1920.1040" timestamp="1589280914134" />
     <state x="666" y="262" key="FileChooserDialogImpl" timestamp="1587717914023">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="666" y="262" key="FileChooserDialogImpl/0.0.1920.1040@0.0.1920.1040" timestamp="1587717914023" />
-    <state width="1877" height="348" key="GridCell.Tab.0.bottom" timestamp="1588870127553">
+    <state width="1877" height="282" key="GridCell.Tab.0.bottom" timestamp="1589285546269">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="348" key="GridCell.Tab.0.bottom/0.0.1920.1040@0.0.1920.1040" timestamp="1588870127553" />
-    <state width="1877" height="348" key="GridCell.Tab.0.center" timestamp="1588870127552">
+    <state width="1877" height="282" key="GridCell.Tab.0.bottom/0.0.1920.1040@0.0.1920.1040" timestamp="1589285546269" />
+    <state width="1877" height="282" key="GridCell.Tab.0.center" timestamp="1589285546269">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="348" key="GridCell.Tab.0.center/0.0.1920.1040@0.0.1920.1040" timestamp="1588870127552" />
-    <state width="1877" height="348" key="GridCell.Tab.0.left" timestamp="1588870127552">
+    <state width="1877" height="282" key="GridCell.Tab.0.center/0.0.1920.1040@0.0.1920.1040" timestamp="1589285546269" />
+    <state width="1877" height="282" key="GridCell.Tab.0.left" timestamp="1589285546269">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="348" key="GridCell.Tab.0.left/0.0.1920.1040@0.0.1920.1040" timestamp="1588870127552" />
-    <state width="1877" height="348" key="GridCell.Tab.0.right" timestamp="1588870127553">
+    <state width="1877" height="282" key="GridCell.Tab.0.left/0.0.1920.1040@0.0.1920.1040" timestamp="1589285546269" />
+    <state width="1877" height="282" key="GridCell.Tab.0.right" timestamp="1589285546269">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="348" key="GridCell.Tab.0.right/0.0.1920.1040@0.0.1920.1040" timestamp="1588870127553" />
-    <state width="1877" height="348" key="GridCell.Tab.1.bottom" timestamp="1588870113223">
+    <state width="1877" height="282" key="GridCell.Tab.0.right/0.0.1920.1040@0.0.1920.1040" timestamp="1589285546269" />
+    <state width="1877" height="348" key="GridCell.Tab.1.bottom" timestamp="1589285233846">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="348" key="GridCell.Tab.1.bottom/0.0.1920.1040@0.0.1920.1040" timestamp="1588870113223" />
-    <state width="1877" height="348" key="GridCell.Tab.1.center" timestamp="1588870113223">
+    <state width="1877" height="348" key="GridCell.Tab.1.bottom/0.0.1920.1040@0.0.1920.1040" timestamp="1589285233846" />
+    <state width="1877" height="348" key="GridCell.Tab.1.center" timestamp="1589285233846">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="348" key="GridCell.Tab.1.center/0.0.1920.1040@0.0.1920.1040" timestamp="1588870113223" />
-    <state width="1877" height="348" key="GridCell.Tab.1.left" timestamp="1588870113223">
+    <state width="1877" height="348" key="GridCell.Tab.1.center/0.0.1920.1040@0.0.1920.1040" timestamp="1589285233846" />
+    <state width="1877" height="348" key="GridCell.Tab.1.left" timestamp="1589285233846">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="348" key="GridCell.Tab.1.left/0.0.1920.1040@0.0.1920.1040" timestamp="1588870113223" />
-    <state width="1877" height="348" key="GridCell.Tab.1.right" timestamp="1588870113223">
+    <state width="1877" height="348" key="GridCell.Tab.1.left/0.0.1920.1040@0.0.1920.1040" timestamp="1589285233846" />
+    <state width="1877" height="348" key="GridCell.Tab.1.right" timestamp="1589285233846">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="348" key="GridCell.Tab.1.right/0.0.1920.1040@0.0.1920.1040" timestamp="1588870113223" />
+    <state width="1877" height="348" key="GridCell.Tab.1.right/0.0.1920.1040@0.0.1920.1040" timestamp="1589285233846" />
     <state x="440" y="95" key="SettingsEditor" timestamp="1587717916053">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="440" y="95" key="SettingsEditor/0.0.1920.1040@0.0.1920.1040" timestamp="1587717916053" />
+    <state x="690" y="276" key="extract.method.dialog" timestamp="1589283591170">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="690" y="276" key="extract.method.dialog/0.0.1920.1040@0.0.1920.1040" timestamp="1589283591170" />
+    <state x="656" y="118" width="607" height="804" key="find.popup" timestamp="1589134378078">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="656" y="118" width="607" height="804" key="find.popup/0.0.1920.1040@0.0.1920.1040" timestamp="1589134378078" />
     <state x="342" y="141" key="new project wizard" timestamp="1588600570107">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
@@ -161,30 +194,29 @@
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state x="616" y="240" key="run.anything.popup/0.0.1920.1040@0.0.1920.1040" timestamp="1587718022058" />
-    <state x="623" y="225" width="672" height="678" key="search.everywhere.popup" timestamp="1588863297060">
+    <state x="623" y="225" width="672" height="678" key="search.everywhere.popup" timestamp="1589277125454">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state x="623" y="225" width="672" height="678" key="search.everywhere.popup/0.0.1920.1040@0.0.1920.1040" timestamp="1588863297060" />
+    <state x="623" y="225" width="672" height="678" key="search.everywhere.popup/0.0.1920.1040@0.0.1920.1040" timestamp="1589277125454" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/se/abjorklund/win32/Win32.java</url>
-          <line>75</line>
-          <option name="timeStamp" value="4" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/se/abjorklund/win32/Win32.java</url>
-          <line>69</line>
-          <option name="timeStamp" value="5" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/se/abjorklund/Main2.java</url>
-          <line>165</line>
+          <url>file://$PROJECT_DIR$/src/se/abjorklund/Win32Platform.java</url>
+          <line>108</line>
           <option name="timeStamp" value="15" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
+    <watches-manager>
+      <configuration name="Application">
+        <watch expression="buffer" language="JAVA" />
+        <watch expression="BITMAP_INFO" language="JAVA" />
+        <watch expression="BUFFER_MEMORY" language="JAVA" />
+        <watch expression="BITMAP_MEMORY" language="JAVA" />
+        <watch expression="offset" language="JAVA" />
+      </configuration>
+    </watches-manager>
   </component>
 </project>

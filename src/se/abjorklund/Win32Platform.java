@@ -1,37 +1,37 @@
 package se.abjorklund;
 
-import com.sun.jna.Structure;
-import com.sun.jna.platform.win32.DBT;
+import com.sun.jna.Pointer;
+import com.sun.jna.platform.win32.*;
 import com.sun.jna.platform.win32.DBT.*;
-import com.sun.jna.platform.win32.Kernel32;
-import com.sun.jna.platform.win32.User32;
 import com.sun.jna.platform.win32.WinDef.*;
 import com.sun.jna.platform.win32.WinUser.MSG;
 import com.sun.jna.platform.win32.WinUser.WNDCLASSEX;
 import com.sun.jna.platform.win32.WinUser.WindowProc;
-import com.sun.jna.platform.win32.Wtsapi32;
+import com.sun.jna.ptr.PointerByReference;
 import se.abjorklund.jna.IGDI32;
+import se.abjorklund.jna.IKernel32;
 import se.abjorklund.jna.IUser32;
 
-import static se.abjorklund.jna.IUser32.ATOM;
-import static se.abjorklund.jna.IUser32.DWORD;
+import static com.sun.jna.platform.win32.WinGDI.BI_RGB;
 import static se.abjorklund.jna.IUser32.*;
 
-// TODO: Auto-generated Javadoc
 
-/**
- * The Class Win32WindowTest.
- */
-public class Main2 implements WindowProc {
+public class Win32Platform implements WindowProc {
 
+    public static final DWORD SRCCOPY = new DWORD(13369376);
+    public static boolean running;
 
-    public static final int BLACKNESS = 66;
-    private final Win32RenderingType globalRenderingType = Win32RenderingType.Win32RenderType_RenderSoftware_DisplayGDI;
+    public static WinGDI.BITMAPINFO BITMAP_INFO = new WinGDI.BITMAPINFO();
+    static private Pointer BITMAP_MEMORY;
+    private int BITMAP_WIDTH;
+    private int BITMAP_HEIGHT;
+    public static final int BYTES_PER_PIXEL = 4;
 
     /**
      * Instantiates a new win32 window test.
      */
-    public Main2() {
+    public Win32Platform() {
+
         // define new window class
         String windowClassName = "MyWindowClass";
         HMODULE instance = Kernel32.INSTANCE.GetModuleHandle("");
@@ -39,28 +39,51 @@ public class Main2 implements WindowProc {
         WNDCLASSEX windowClass = new WNDCLASSEX();
         windowClass.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
         windowClass.hInstance = instance;
-        windowClass.lpfnWndProc = Main2.this;
+        windowClass.lpfnWndProc = Win32Platform.this;
         windowClass.lpszClassName = windowClassName;
 
         // register window class
         ATOM registerClassResult = IUser32.INSTANCE.RegisterClassEx(windowClass);
         if (registerClassResult != null) {
             if (registerClassResult.intValue() != 0) {
-                HWND windowHandle = IUser32.INSTANCE.CreateWindowEx(0, windowClass.lpszClassName, "Handmade Hero Java",
+                HWND window = IUser32.INSTANCE.CreateWindowEx(0, windowClass.lpszClassName, "Java JNA Graphics Experiment",
                         WS_OVERLAPPEDWINDOW | WS_VISIBLE,
                         CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
                         null, null, instance, null);
-                if (windowHandle != null) {
-                    MSG message = new MSG();
+                if (window != null) {
+                    running = true;
+                    int xOffset = 0;
+                    int yOffset = 0;
+                    while (running) {
 
-                    for (; ; ) {
-                        int messageResult = IUser32.INSTANCE.GetMessage(message, null, 0, 0);
-                        if (messageResult > 0) {
+                        MSG message = new MSG();
+                        while (IUser32.INSTANCE.PeekMessage(message, null, 0, 0, PM_REMOVE)) {
+
+                            if (message.message == WM_QUIT) {
+                                running = false;
+                            }
+
                             IUser32.INSTANCE.TranslateMessage(message);
                             IUser32.INSTANCE.DispatchMessage(message);
-                        } else {
-                            break;
                         }
+                        if (true) {
+                            double sinValueOffset = (Math.sin(xOffset))*4;
+                            System.out.println(sinValueOffset);
+                            renderWeirdGradient((int) sinValueOffset, (int)sinValueOffset);
+                        } else {
+                            renderWeirdGradient(xOffset, yOffset);
+                        }
+
+                        HDC deviceContext = INSTANCE.GetDC(window);
+                        RECT clientRect = new RECT();
+                        IUser32.INSTANCE.GetClientRect(window, clientRect);
+                        int windowWidth = clientRect.right - clientRect.left;
+                        int windowHeight = clientRect.bottom - clientRect.top;
+                        win32UpdateWindow(deviceContext, clientRect, 0, 0, windowWidth, windowHeight);
+                        INSTANCE.ReleaseDC(window, deviceContext);
+
+
+                        xOffset++;
                     }
                 }
             } else {
@@ -69,63 +92,65 @@ public class Main2 implements WindowProc {
         } else {
             //TODO(anders): logging
         }
-//
-//        // create new window
-//        HWND hWnd = User32.INSTANCE
-//                .CreateWindowEx(
-//                        User32.WS_EX_TOPMOST,
-//                        windowClassName,
-//                        "My hidden helper window, used only to catch the windows events",
-//                        WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 0, 0,
-//                        null, // WM_DEVICECHANGE contradicts parent=WinUser.HWND_MESSAGE
-//                        null, instance, null);
-//
-//        if (hWnd != null) {
-//            WinDef.HDC openGLDC = User32.INSTANCE.GetDC(hWnd);
-//            WinDef.HGLRC openGLRC = null;
-//
-//        }
-//
-//        getLastError();
-//        System.out.println("window sucessfully created! window hwnd: "
-//                + hWnd.getPointer().toString());
-//
-//        Wtsapi32.INSTANCE.WTSRegisterSessionNotification(hWnd,
-//                Wtsapi32.NOTIFY_FOR_THIS_SESSION);
-//
-//        /* this filters for all device classes */
-//        // DEV_BROADCAST_HDR notificationFilter = new DEV_BROADCAST_HDR();
-//        // notificationFilter.dbch_devicetype = DBT.DBT_DEVTYP_DEVICEINTERFACE;
-//
-//        /* this filters for all usb device classes */
-//        DEV_BROADCAST_DEVICEINTERFACE notificationFilter = new DEV_BROADCAST_DEVICEINTERFACE();
-//        notificationFilter.dbcc_size = notificationFilter.size();
-//        notificationFilter.dbcc_devicetype = DBT.DBT_DEVTYP_DEVICEINTERFACE;
-//        notificationFilter.dbcc_classguid = DBT.GUID_DEVINTERFACE_USB_DEVICE;
-//
-//        /*
-//         * use User32.DEVICE_NOTIFY_ALL_INTERFACE_CLASSES instead of
-//         * DEVICE_NOTIFY_WINDOW_HANDLE to ignore the dbcc_classguid value
-//         */
-//        HDEVNOTIFY hDevNotify = User32.INSTANCE.RegisterDeviceNotification(
-//                hWnd, notificationFilter, User32.DEVICE_NOTIFY_WINDOW_HANDLE);
-//
-//        getLastError();
-//        if (hDevNotify != null)
-//            System.out.println("RegisterDeviceNotification was sucessfully!");
-//
-//        MSG msg = new MSG();
-//        while (User32.INSTANCE.GetMessage(msg, hWnd, 0, 0) != 0) {
-//            User32.INSTANCE.TranslateMessage(msg);
-//            User32.INSTANCE.DispatchMessage(msg);
-//        }
-//
-//        User32.INSTANCE.UnregisterDeviceNotification(hDevNotify);
-//        Wtsapi32.INSTANCE.WTSUnRegisterSessionNotification(hWnd);
-//        User32.INSTANCE.UnregisterClass(windowClassName, instance);
-//        User32.INSTANCE.DestroyWindow(hWnd);
-//
-//        System.out.println("program exit!");
+    }
+
+    private void win32resizeDIBSection(int width, int height) {
+
+        if (BITMAP_MEMORY != null) {
+            IKernel32.INSTANCE.VirtualFree(BITMAP_MEMORY, null, MEM_RELEASE);
+        }
+
+        BITMAP_WIDTH = width;
+        BITMAP_HEIGHT = height;
+
+        WinGDI.BITMAPINFOHEADER infoHeader = new WinGDI.BITMAPINFOHEADER();
+        infoHeader.biSize = 40;
+        infoHeader.biWidth = BITMAP_WIDTH;
+        infoHeader.biHeight = -BITMAP_HEIGHT; //Negative as specified by the API in order to get top-down DIB. Origin is upper left corner.
+        infoHeader.biPlanes = 1;
+        infoHeader.biBitCount = 32;
+        infoHeader.biCompression = BI_RGB;
+
+        BITMAP_INFO.bmiHeader = infoHeader;
+
+        int size = (BITMAP_WIDTH * BITMAP_HEIGHT) * BYTES_PER_PIXEL;
+        SIZE_T bitmapMemorySize = new SIZE_T(size);
+
+        BITMAP_MEMORY = IKernel32.INSTANCE.VirtualAlloc(Pointer.NULL, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
+    }
+
+    private void renderWeirdGradient(int xOffset, int yOffset) {
+        long pitchInBytes = BITMAP_WIDTH * BYTES_PER_PIXEL;
+        long row = 0;
+
+        for (int y = 0; y < BITMAP_HEIGHT; ++y) {
+
+            long pixelOnRow = 0;
+            for (int x = 0; x < BITMAP_WIDTH; ++x) {
+                long offsetInBytes = (row * pitchInBytes) + (pixelOnRow * BYTES_PER_PIXEL);
+
+                BITMAP_MEMORY.setByte(offsetInBytes + 0, (byte) (x + xOffset));
+                BITMAP_MEMORY.setByte(offsetInBytes + 1, (byte) (y + yOffset));
+                BITMAP_MEMORY.setByte(offsetInBytes + 2, (byte) 0x00);
+                BITMAP_MEMORY.setByte(offsetInBytes + 3, (byte) 0x00);
+
+                ++pixelOnRow;
+            }
+            ++row;
+        }
+    }
+
+    private void win32UpdateWindow(HDC deviceContext, RECT windowRect, int x, int y, int width, int height) {
+
+        int windowWidth = windowRect.right - windowRect.left;
+        int windowHeight = windowRect.bottom - windowRect.top;
+
+        IGDI32.INSTANCE.StretchDIBits(deviceContext,
+                /*x, y, width, height,
+                x, y, width, height,*/
+                0, 0, BITMAP_WIDTH, BITMAP_HEIGHT,
+                0, 0, windowWidth, windowHeight,
+                BITMAP_MEMORY, BITMAP_INFO, new UINT(WinGDI.DIB_RGB_COLORS), SRCCOPY);
     }
 
     /*
@@ -140,14 +165,21 @@ public class Main2 implements WindowProc {
         LRESULT result = new LRESULT(0);
         switch (message) {
             case WM_SIZE: {
+                RECT clientRect = new RECT();
+                IUser32.INSTANCE.GetClientRect(window, clientRect);
+                int width = clientRect.right - clientRect.left;
+                int height = clientRect.bottom - clientRect.top;
+                win32resizeDIBSection(width, height);
                 System.out.println("WM_SIZE");
             }
             break;
             case WM_DESTROY: {
+                running = false;
                 System.out.println("WM_DESTROY");
             }
             break;
             case WM_CLOSE: {
+                running = false;
                 System.out.println("WM_CLOSE");
             }
             break;
@@ -158,13 +190,15 @@ public class Main2 implements WindowProc {
             case WM_PAINT: {
                 PAINTSTRUCT paintstruct = new PAINTSTRUCT();
                 HDC deviceContext = IUser32.INSTANCE.BeginPaint(window, paintstruct);
-                int breakHere = 0;
                 int x = paintstruct.rcPaint.left;
                 int y = paintstruct.rcPaint.top;
                 int width = paintstruct.rcPaint.left - paintstruct.rcPaint.right;
                 int height = paintstruct.rcPaint.bottom - paintstruct.rcPaint.top;
-                DWORD blackness = new DWORD(BLACKNESS);
-                IGDI32.INSTANCE.PatBlt(deviceContext, x, y, width, height, blackness);
+
+                RECT clientRect = new RECT();
+                IUser32.INSTANCE.GetClientRect(window, clientRect);
+
+                win32UpdateWindow(deviceContext, clientRect, x, y, width, height);
 
                 IUser32.INSTANCE.EndPaint(window, paintstruct);
             }
@@ -399,7 +433,7 @@ public class Main2 implements WindowProc {
      * @param args the arguments
      */
     public static void main(String[] args) {
-        new Main2();
+        new Win32Platform();
     }
 
     enum Win32RenderingType {
@@ -408,5 +442,4 @@ public class Main2 implements WindowProc {
         Win32RenderType_RenderSoftware_DisplayGDI,
     }
 
-    ;
 }

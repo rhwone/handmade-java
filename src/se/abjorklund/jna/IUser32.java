@@ -41,4 +41,6 @@ public interface IUser32 extends com.sun.jna.platform.win32.User32 {
     int CS_OWNDC = 0x0020;
     int COLOR_WINDOW = 5;
 
+    int PM_REMOVE = 0x0001;
+
 }
