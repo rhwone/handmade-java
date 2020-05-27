@@ -56,10 +56,6 @@ public class Win32Platform implements WindowProc {
         windowClass.lpszClassName = windowClassName;
     }
 
-    private void win32InitSound(HWND window) {
-        DSOUND_JNI.initDSound(window, 48000, 48000*SIZE_OF_INT);
-    }
-
     private void win32resizeDIBSection(Win32OffscreenBuffer buffer, int width, int height) {
 
         if (buffer.getMemory() != null) {
@@ -104,7 +100,7 @@ public class Win32Platform implements WindowProc {
                     int xOffset = 0;
                     int yOffset = 0;
                     int squareWaveCounter = 0;
-                    win32InitSound(window);
+                    DSOUND_JNI.initDSound();
                     //startPlayingBuffer();
                     while (running) {
 

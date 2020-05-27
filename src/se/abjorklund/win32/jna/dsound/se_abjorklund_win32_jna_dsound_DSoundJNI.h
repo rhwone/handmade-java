@@ -10,10 +10,10 @@ extern "C" {
     /*
      * Class:     se_abjorklund_win32_jna_dsound_DSoundJNI
      * Method:    initDSound
-     * Signature: (Lcom/sun/jna/platform/win32/WinDef/HWND;II)V
+     * Signature: ()V
      */
     JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_initDSound
-        (JNIEnv *, jobject, jobject, jint, jint);
+        (JNIEnv *, jobject);
     
     /*
      * Class:     se_abjorklund_win32_jna_dsound_DSoundJNI

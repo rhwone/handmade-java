@@ -55,39 +55,26 @@ global_variable U32 secondaryBufferSize;
 global_variable U32 toneVolume;
 global_variable B32 soundIsPlaying;
 global_variable HWND *windowHandle;
+global_variable U32 samplesPerSecond;
+global_variable U32 toneHz;
 
 #define DIRECT_SOUND_CREATE(name) HRESULT WINAPI name(LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS,  LPUNKNOWN pUnkOuter)
 typedef DIRECT_SOUND_CREATE(direct_sound_create);
 
 
 JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_initDSound
-(JNIEnv *env, jobject thisObject, jobject window, jint samplesPerSecond, jint bufferSize)
+(JNIEnv *env, jobject thisObject)
 {
-    
-    jlong address = NULL;
-	
-    memcpy(&address, window, 8);
-	
-    S64 windowAddress = (S64)address;
-    printf("window: %p\n", &window);
-    
-    
-    
-    int hz = 256;
+    toneHz = 256;
+    samplesPerSecond = 48000;
     toneVolume = 3000;
     runningSampleIndex = 0;
-    squareWavePeriod = samplesPerSecond/hz;
+    squareWavePeriod = samplesPerSecond/toneHz;
     halfSquareWavePeriod = squareWavePeriod / 2;
     bytesPerSample = sizeof(S16)*2;
     secondaryBufferSize = samplesPerSecond * bytesPerSample;
     
     soundIsPlaying = false;
-    
-    S32 sps = (S32)samplesPerSecond;
-    
-    printf("samplesPerSecond:%d\n", sps);
-    
-    windowHandle = (HWND*) window;
     
     HMODULE dSoundLibrary = LoadLibraryA("dsound.dll");
     if(dSoundLibrary)
@@ -161,7 +148,7 @@ JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_initDSound
             DSBUFFERDESC bufferDescription = {};
             bufferDescription.dwSize = sizeof(bufferDescription);
             bufferDescription.dwFlags = 0;
-            bufferDescription.dwBufferBytes = bufferSize;
+            bufferDescription.dwBufferBytes = secondaryBufferSize;
             bufferDescription.lpwfxFormat = &waveFormat;
             HRESULT error = directSound->CreateSoundBuffer(&bufferDescription, &globalSecondaryBuffer, 0);
             if(SUCCEEDED(error))
