@@ -1,0 +1,3 @@
+
+//Compile DSoundJNI.cpp
+cl -I..\iaca-win64\ DSoundJNI.cpp -LD /link -PDB:DSoundJNI.pdb /DEBUG:FULL user32.lib
