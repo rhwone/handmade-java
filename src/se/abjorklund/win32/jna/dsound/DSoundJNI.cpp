@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <limits.h>
 #include <float.h>
+#include <math.h>
 #include <dsound.h>
 #include "se_abjorklund_win32_jna_dsound_DSoundJNI.h"
 
@@ -46,35 +47,89 @@ typedef uintptr_t UMM;
 #define local_persist static 
 #define global_variable static
 
-global_variable LPDIRECTSOUNDBUFFER globalSecondaryBuffer;
-global_variable U32 runningSampleIndex;
-global_variable U32 squareWavePeriod;
-global_variable U32 halfSquareWavePeriod;
-global_variable U32 bytesPerSample;
-global_variable U32 secondaryBufferSize;
-global_variable U32 toneVolume;
-global_variable B32 soundIsPlaying;
-global_variable HWND *windowHandle;
-global_variable U32 samplesPerSecond;
-global_variable U32 toneHz;
+#define pi32 3.14159265359f
 
-#define DIRECT_SOUND_CREATE(name) HRESULT WINAPI name(LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS,  LPUNKNOWN pUnkOuter)
+struct Win32SoundOutput 
+{
+    U32 runningSampleIndex;
+    U32 wavePeriod;
+    U32 halfWavePeriod;
+    U32 bytesPerSample;
+    U32 secondaryBufferSize;
+    U32 toneVolume;
+    U32 samplesPerSecond;
+    U32 toneHz;
+};
+
+global_variable LPDIRECTSOUNDBUFFER globalSecondaryBuffer;
+global_variable Win32SoundOutput globalSoundOutput;
+
+#define DIRECT_SOUND_CREATE(name) HRESULT WINAPI name(LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS,   LPUNKNOWN pUnkOuter)
 typedef DIRECT_SOUND_CREATE(direct_sound_create);
 
+
+internal void win32FillSoundBuffer(DWORD byteToLock, DWORD bytesToWrite)
+{
+    VOID *region1;
+    DWORD region1Size;
+    VOID *region2;
+    DWORD region2Size;
+    
+    if(SUCCEEDED(globalSecondaryBuffer->Lock(
+        byteToLock,
+        bytesToWrite,
+        &region1, &region1Size,
+        &region2, &region2Size,
+        0)))
+    {
+        printf("Buffer locked successfully\n");
+        
+        
+        DWORD region1SampleCount = region1Size/globalSoundOutput.bytesPerSample;;
+        S16 *sampleOut = (S16*)region1;
+        for(DWORD sampleIndex = 0; sampleIndex < region1SampleCount; ++sampleIndex)
+        {
+            R32 t = 2.0*pi32*(R32)globalSoundOutput.runningSampleIndex / (R32)globalSoundOutput.wavePeriod;
+            R32 sineValue = sinf(t);
+            S16 sampleValue = (S16) (sineValue * globalSoundOutput.toneVolume);
+            *sampleOut++ = sampleValue;
+            *sampleOut++ = sampleValue;
+            
+            ++globalSoundOutput.runningSampleIndex;
+        }
+        
+        DWORD region2SampleCount = region2Size/globalSoundOutput.bytesPerSample;
+        sampleOut = (S16*)region2;
+        for(DWORD sampleIndex = 0; sampleIndex < region2SampleCount; ++sampleIndex)
+        {
+            R32 t = 2.0*pi32*(R32)globalSoundOutput.runningSampleIndex / (R32)globalSoundOutput.wavePeriod;
+            R32 sineValue = sinf(t);
+            S16 sampleValue = (S16) (sineValue * globalSoundOutput.toneVolume);
+            
+            *sampleOut++ = sampleValue;
+            *sampleOut++ = sampleValue;
+            
+            ++globalSoundOutput.runningSampleIndex;
+        }
+        
+        globalSecondaryBuffer->Unlock(region1, region1Size, region2, region2Size);
+        
+    }
+}
 
 JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_initDSound
 (JNIEnv *env, jobject thisObject)
 {
-    toneHz = 256;
-    samplesPerSecond = 48000;
-    toneVolume = 3000;
-    runningSampleIndex = 0;
-    squareWavePeriod = samplesPerSecond/toneHz;
-    halfSquareWavePeriod = squareWavePeriod / 2;
-    bytesPerSample = sizeof(S16)*2;
-    secondaryBufferSize = samplesPerSecond * bytesPerSample;
     
-    soundIsPlaying = false;
+    globalSoundOutput = {};
+    
+    globalSoundOutput.toneHz = 256;
+    globalSoundOutput.samplesPerSecond = 48000;
+    globalSoundOutput.toneVolume = 3000;
+    globalSoundOutput.runningSampleIndex = 0;
+    globalSoundOutput.wavePeriod = globalSoundOutput.samplesPerSecond/globalSoundOutput.toneHz;
+    globalSoundOutput.bytesPerSample = sizeof(S16)*2;
+    globalSoundOutput.secondaryBufferSize = globalSoundOutput.samplesPerSecond * globalSoundOutput.bytesPerSample;
     
     HMODULE dSoundLibrary = LoadLibraryA("dsound.dll");
     if(dSoundLibrary)
@@ -92,7 +147,7 @@ JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_initDSound
             WAVEFORMATEX waveFormat = {};
             waveFormat.wFormatTag = WAVE_FORMAT_PCM;
             waveFormat.nChannels = 2;
-            waveFormat.nSamplesPerSec = samplesPerSecond;
+            waveFormat.nSamplesPerSec = globalSoundOutput.samplesPerSecond;
             waveFormat.wBitsPerSample = 16;
             waveFormat.nBlockAlign = (waveFormat.nChannels * waveFormat.wBitsPerSample) / 8;
             waveFormat.nAvgBytesPerSec = waveFormat.nSamplesPerSec*waveFormat.nBlockAlign;
@@ -148,7 +203,7 @@ JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_initDSound
             DSBUFFERDESC bufferDescription = {};
             bufferDescription.dwSize = sizeof(bufferDescription);
             bufferDescription.dwFlags = 0;
-            bufferDescription.dwBufferBytes = secondaryBufferSize;
+            bufferDescription.dwBufferBytes = globalSoundOutput.secondaryBufferSize;
             bufferDescription.lpwfxFormat = &waveFormat;
             HRESULT error = directSound->CreateSoundBuffer(&bufferDescription, &globalSecondaryBuffer, 0);
             if(SUCCEEDED(error))
@@ -165,6 +220,9 @@ JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_initDSound
     {
         //TODO: diagnostics
     }
+    
+    win32FillSoundBuffer(0, globalSoundOutput.secondaryBufferSize);
+    globalSecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
 }
 
 JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_startPlayingBuffer
@@ -173,13 +231,8 @@ JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_startPlayin
     globalSecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
 }
 
-
 JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_playSquareWave(JNIEnv *env, jobject thisObject)
 {
-    printf("squareWavePeriod: %d\n", squareWavePeriod);
-    printf("runningSampleIndex: %d\n", runningSampleIndex);
-    printf("secondaryBufferSize: %d\n", secondaryBufferSize);
-    
     DWORD playCursor;
     DWORD writeCursor;
     
@@ -190,70 +243,24 @@ JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_playSquareW
         printf("GetCurrentPosition succeeded\n");
         printf("");
         
-        DWORD byteToLock = runningSampleIndex*bytesPerSample % secondaryBufferSize;
+        DWORD byteToLock = (globalSoundOutput.runningSampleIndex*globalSoundOutput.bytesPerSample) % globalSoundOutput.secondaryBufferSize;
         DWORD bytesToWrite;
         if(byteToLock == playCursor)
         {
-            bytesToWrite = secondaryBufferSize;
+            bytesToWrite = 0;
         }
         else if(byteToLock > playCursor)
         {
-            bytesToWrite = (secondaryBufferSize - byteToLock);
+            bytesToWrite = (globalSoundOutput.secondaryBufferSize - byteToLock);
             bytesToWrite += playCursor;
         }
         else {
             bytesToWrite = playCursor - byteToLock;
         }
         
-        VOID *region1;
-        DWORD region1Size;
-        VOID *region2;
-        DWORD region2Size;
+        win32FillSoundBuffer(byteToLock, bytesToWrite);
         
-        if(SUCCEEDED(globalSecondaryBuffer->Lock(
-            byteToLock,
-            bytesToWrite,
-            &region1, &region1Size,
-            &region2, &region2Size,
-            0)))
-        {
-            printf("Buffer locked successfully\n");
-            
-            
-            DWORD region1SampleCount = region1Size/bytesPerSample;;
-            S16 *sampleOut = (S16*)region1;
-            for(DWORD sampleIndex = 0; sampleIndex < region1SampleCount; ++sampleIndex)
-            {
-                //printf("*sampleOut: %p\n", sampleOut);
-                S16 sampleValue = ((runningSampleIndex++ / halfSquareWavePeriod) % 2) ? toneVolume : -toneVolume;
-                *sampleOut++ = sampleValue;
-                *sampleOut++ = sampleValue;
-                //printf("sampleValue: %d\n", sampleValue);
-            }
-            
-            DWORD region2SampleCount = region2Size/bytesPerSample;
-            sampleOut = (S16*)region2;
-            for(DWORD sampleIndex = 0; sampleIndex < region2SampleCount; ++sampleIndex)
-            {
-                S16 sampleValue = ((runningSampleIndex++ / halfSquareWavePeriod) % 2) ? toneVolume : -toneVolume;
-                *sampleOut++ = sampleValue;
-                *sampleOut++ = sampleValue;
-            }
-            
-            globalSecondaryBuffer->Unlock(region1, region1Size, region2, region2Size);
-            
-        }
     }
-    
-    printf("soundIsPlaying: %d\n", soundIsPlaying);
-    
-    if(!soundIsPlaying)
-    {
-        printf("Playing sound\n");
-        globalSecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
-        soundIsPlaying = true;
-    }
-    
 }
 
 

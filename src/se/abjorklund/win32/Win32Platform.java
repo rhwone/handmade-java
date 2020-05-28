@@ -91,7 +91,7 @@ public class Win32Platform implements WindowProc {
         ATOM registerClassResult = IUSER32.RegisterClassEx(windowClass);
         if (registerClassResult != null) {
             if (registerClassResult.intValue() != 0) {
-                HWND window = IUSER32.CreateWindowEx(0, windowClass.lpszClassName, "Java JNA Graphics Experiment",
+                HWND window = IUSER32.CreateWindowEx(0, windowClass.lpszClassName, "Java JNA Graphics & Sound Experiment",
                         WS_OVERLAPPEDWINDOW | WS_VISIBLE,
                         CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
                         null, null, windowClass.hInstance, null);
