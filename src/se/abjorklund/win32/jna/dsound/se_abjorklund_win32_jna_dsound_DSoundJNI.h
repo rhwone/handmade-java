@@ -25,11 +25,11 @@ extern "C" {
     
     /*
      * Class:     se_abjorklund_win32_jna_dsound_DSoundJNI
-     * Method:    playSquareWave
-     * Signature: ()V
+     * Method:    playSound
+     * Signature: ([S)V
      */
-    JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_playSquareWave
-        (JNIEnv *, jobject);
+    JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_playSound
+        (JNIEnv *, jobject, jshortArray);
     
 #ifdef __cplusplus
 }

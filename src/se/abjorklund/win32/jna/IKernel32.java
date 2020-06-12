@@ -13,4 +13,8 @@ public interface IKernel32 extends Kernel32 {
     Pointer VirtualAlloc(Pointer lpAddress, SIZE_T dwSize, int flAllocationType, int flProtect);
 
     boolean VirtualFree(Pointer lpAddress, SIZE_T dwSize, int dwFreeType);
+
+    boolean QueryPerformanceCounter(LARGE_INTEGER lpPerformanceCount);
+
+    boolean QueryPerformanceFrequency(LARGE_INTEGER lpFrequency);
 }

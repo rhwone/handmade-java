@@ -9,5 +9,5 @@ public class DSoundJNI {
 
     public native void startPlayingBuffer();
 
-    public native void playSquareWave();
+    public native void playSound(short[] buffer);
 }

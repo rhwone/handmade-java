@@ -4,9 +4,12 @@ import com.sun.jna.Pointer;
 import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinDef.*;
 import com.sun.jna.platform.win32.WinGDI;
+import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.platform.win32.WinUser.MSG;
 import com.sun.jna.platform.win32.WinUser.WNDCLASSEX;
 import com.sun.jna.platform.win32.WinUser.WindowProc;
+import se.abjorklund.game.Game;
+import se.abjorklund.game.GameOffscreenBuffer;
 import se.abjorklund.win32.jna.IGdi32;
 import se.abjorklund.win32.jna.IKernel32;
 import se.abjorklund.win32.jna.IUser32;
@@ -22,21 +25,28 @@ import static se.abjorklund.win32.jna.xinput.XInputGamepad.*;
 
 public class Win32Platform implements WindowProc {
 
+    private static final Game game = new Game();
+
     private static final DWORD SRCCOPY = new DWORD(13369376);
     public static final int SIZE_OF_INT = 4;
 
     private final WNDCLASSEX windowClass;
     private static boolean running;
-    private static Win32OffscreenBuffer globalBackBuffer = new Win32OffscreenBuffer();
+    private static final Win32OffscreenBuffer globalBackBuffer = new Win32OffscreenBuffer();
+    public static final LARGE_INTEGER PERF_COUNTER_FREQUENCY = new LARGE_INTEGER();
 
     //JNA WINAPI Instances
     private static XInput XINPUT;
     private static IKernel32 IKERNEL32;
-    private IUser32 IUSER32;
-    private IGdi32 IGDI32;
+    private final IUser32 IUSER32;
+    private final IGdi32 IGDI32;
+
+    //CUSTOM JNI INSTANCES
     private static final DSoundJNI DSOUND_JNI = new DSoundJNI();
 
     public Win32Platform() {
+        String osName = System.getProperty("os.name");
+        System.out.println("Running on: " + osName);
         String windowClassName = "MyWindowClass";
 
         IKERNEL32 = IKernel32.INSTANCE;
@@ -49,6 +59,8 @@ public class Win32Platform implements WindowProc {
         }
         HMODULE instance = Kernel32.INSTANCE.GetModuleHandle("");
 
+        IKERNEL32.QueryPerformanceFrequency(PERF_COUNTER_FREQUENCY);
+
         windowClass = new WNDCLASSEX();
         windowClass.style = CS_HREDRAW | CS_VREDRAW;
         windowClass.hInstance = instance;
@@ -57,7 +69,6 @@ public class Win32Platform implements WindowProc {
     }
 
     private void win32resizeDIBSection(Win32OffscreenBuffer buffer, int width, int height) {
-
         if (buffer.getMemory() != null) {
             IKERNEL32.VirtualFree(buffer.getMemory(), null, MEM_RELEASE);
         }
@@ -101,9 +112,12 @@ public class Win32Platform implements WindowProc {
                     int yOffset = 0;
                     int squareWaveCounter = 0;
                     DSOUND_JNI.initDSound();
-                    //startPlayingBuffer();
-                    while (running) {
 
+                    LARGE_INTEGER lastCounter = new LARGE_INTEGER();
+                    IKERNEL32.QueryPerformanceCounter(lastCounter);
+
+
+                    while (running) {
                         MSG message = new MSG();
                         while (IUSER32.PeekMessage(message, null, 0, 0, PM_REMOVE)) {
 
@@ -163,16 +177,15 @@ public class Win32Platform implements WindowProc {
                                 }
                             }
                         }
+                        GameOffscreenBuffer gameOffscreenBuffer = getGameOffscreenBuffer();
+                        game.gameUpdateAndRender(gameOffscreenBuffer);
 
-                        if (false) {
-                            double sinValueOffset = (Math.sin(xOffset)) * 4;
-                            System.out.println(sinValueOffset);
-                            renderWeirdGradient(globalBackBuffer, (int) sinValueOffset, (int) sinValueOffset);
-                        } else {
-                            renderWeirdGradient(globalBackBuffer, xOffset, yOffset);
+                        short[] shortArray = new short[256];
+
+                        for (short i = 0; i < 256; i++) {
+                            shortArray[i] = i;
                         }
-
-                        DSOUND_JNI.playSquareWave();
+                        DSOUND_JNI.playSound(shortArray);
 
                         HDC deviceContext = IUSER32.GetDC(window);
                         Win32WindowDimension dimension = getWindowDimension(window);
@@ -181,7 +194,16 @@ public class Win32Platform implements WindowProc {
                                 dimension.getWidth(), dimension.getHeight(),
                                 0, 0, dimension.getWidth(), dimension.getHeight());
 
-                        IUSER32.ReleaseDC(window, deviceContext);
+                        LARGE_INTEGER endCounter = new LARGE_INTEGER();
+                        IKERNEL32.QueryPerformanceCounter(endCounter);
+
+                        if (false) {
+                            long counterElapsed = endCounter.getValue() - lastCounter.getValue();
+                            long msPerFrame = (1000 * counterElapsed) / PERF_COUNTER_FREQUENCY.getValue();
+                            long FPS = PERF_COUNTER_FREQUENCY.getValue() / counterElapsed;
+                            System.out.println("Milliseconds per frame: " + msPerFrame + ". " + "FPS: " + FPS);
+                            lastCounter = endCounter;
+                        }
                     }
                 }
             } else {
@@ -192,33 +214,14 @@ public class Win32Platform implements WindowProc {
         }
     }
 
-    private void startPlayingBuffer() {
-        DSOUND_JNI.startPlayingBuffer();
-    }
-
-    private void renderWeirdGradient(Win32OffscreenBuffer buffer, int xOffset, int yOffset) {
-        int width = buffer.getWidth();
-        int height = buffer.getHeight();
-        int bytesPerPixel = buffer.getBytesPerPixel();
-        int pitch = buffer.getPitch();
-        Pointer memory = buffer.getMemory();
-
-        int row = 0;
-        for (int y = 0; y < height; ++y) {
-
-            int pixelOnRow = 0;
-            for (int x = 0; x < width; ++x) {
-                long offsetInBytes = (row * pitch) + (pixelOnRow * bytesPerPixel);
-
-                memory.setByte(offsetInBytes + 0, (byte) (x + xOffset));
-                memory.setByte(offsetInBytes + 1, (byte) (y + yOffset));
-                memory.setByte(offsetInBytes + 2, (byte) 0x00);
-                memory.setByte(offsetInBytes + 3, (byte) 0x00);
-
-                ++pixelOnRow;
-            }
-            ++row;
-        }
+    private GameOffscreenBuffer getGameOffscreenBuffer() {
+        GameOffscreenBuffer gameOffscreenBuffer = new GameOffscreenBuffer();
+        gameOffscreenBuffer.setBytesPerPixel(globalBackBuffer.getBytesPerPixel());
+        gameOffscreenBuffer.setMemory(globalBackBuffer.getMemory());
+        gameOffscreenBuffer.setWidth(globalBackBuffer.getWidth());
+        gameOffscreenBuffer.setHeight(globalBackBuffer.getHeight());
+        gameOffscreenBuffer.setPitch(globalBackBuffer.getPitch());
+        return gameOffscreenBuffer;
     }
 
     private void win32DisplayBufferInWindow(Win32OffscreenBuffer buffer, HDC deviceContext, int windowWidth, int windowHeight,

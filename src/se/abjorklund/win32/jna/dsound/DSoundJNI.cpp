@@ -68,7 +68,7 @@ global_variable Win32SoundOutput globalSoundOutput;
 typedef DIRECT_SOUND_CREATE(direct_sound_create);
 
 
-internal void win32FillSoundBuffer(DWORD byteToLock, DWORD bytesToWrite)
+internal void win32FillSoundBuffer(DWORD byteToLock, DWORD bytesToWrite, jshort *samples)
 {
     VOID *region1;
     DWORD region1Size;
@@ -76,11 +76,11 @@ internal void win32FillSoundBuffer(DWORD byteToLock, DWORD bytesToWrite)
     DWORD region2Size;
     
     if(SUCCEEDED(globalSecondaryBuffer->Lock(
-        byteToLock,
-        bytesToWrite,
-        &region1, &region1Size,
-        &region2, &region2Size,
-        0)))
+                                             byteToLock,
+                                             bytesToWrite,
+                                             &region1, &region1Size,
+                                             &region2, &region2Size,
+                                             0)))
     {
         printf("Buffer locked successfully\n");
         
@@ -140,7 +140,7 @@ JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_initDSound
         
         LPDIRECTSOUND directSound;
         if(directSoundCreate && SUCCEEDED(directSoundCreate(0, &directSound, 0)))
-        
+            
         {
             printf("DirectSoundCreate succeeded\n");
             
@@ -221,7 +221,8 @@ JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_initDSound
         //TODO: diagnostics
     }
     
-    win32FillSoundBuffer(0, globalSoundOutput.secondaryBufferSize);
+    jshort *samples = {};
+    win32FillSoundBuffer(0, globalSoundOutput.secondaryBufferSize, samples);
     globalSecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
 }
 
@@ -231,10 +232,24 @@ JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_startPlayin
     globalSecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
 }
 
-JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_playSquareWave(JNIEnv *env, jobject thisObject)
+JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_playSound(JNIEnv *env, jobject thisObject, jshortArray javaSoundBuffer)
 {
+    jboolean isCopy = 0;
+    jshort *samples = env->GetShortArrayElements(javaSoundBuffer, &isCopy);
+    
     DWORD playCursor;
     DWORD writeCursor;
+    
+    jshort *zero = samples + 0;
+    jshort *ten = samples + 10;
+    jshort *twentyfive = samples + 25;
+    jshort *twohundred = samples + 200;
+    
+    printf("%d\n", *zero);
+    printf("%d\n", *ten);
+    printf("%d\n", *twentyfive);
+    printf("%d\n", *twohundred);
+    
     
     //printf("playSquareWave called\n");
     
@@ -258,10 +273,65 @@ JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_playSquareW
             bytesToWrite = playCursor - byteToLock;
         }
         
-        win32FillSoundBuffer(byteToLock, bytesToWrite);
-        
+        win32FillSoundBuffer(byteToLock, bytesToWrite, samples);
     }
 }
-
-
-
+#if 0
+internal void createSineWave()
+{
+    DWORD byteToLock = 0;
+    DWORD targetCursor = 0;
+    DWORD bytesToWrite = 0;
+    DWORD playCursor = 0;
+    DWORD writeCursor = 0;
+    B32 soundIsValid = false;
+    // TODO(casey): Tighten up sound logic so that we know where we should be
+    // writing to and can anticipate the time spent in the game update.
+    if(SUCCEEDED(GlobalSecondaryBuffer->GetCurrentPosition(&playCursor, &writeCursor)))
+    {
+        byteToLock = ((SoundOutput.RunningSampleIndex*SoundOutput.BytesPerSample) %
+                      SoundOutput.SecondaryBufferSize);
+        
+        targetCursor =
+            ((playCursor +
+              (SoundOutput.LatencySampleCount*SoundOutput.BytesPerSample)) %
+             SoundOutput.SecondaryBufferSize);
+        if(byteToLock > targetCursor)
+        {
+            bytesToWrite = (SoundOutput.SecondaryBufferSize - byteToLock);
+            bytesToWrite += targetCursor;
+        }
+        else
+        {
+            bytesToWrite = targetCursor - byteToLock;
+        }
+        
+        soundIsValid = true;
+    }
+    
+    game_sound_output_buffer SoundBuffer = {};
+    SoundBuffer.SamplesPerSecond = SoundOutput.SamplesPerSecond;
+    SoundBuffer.SampleCount = bytesToWrite / SoundOutput.BytesPerSample;
+    SoundBuffer.Samples = Samples;
+    
+    S16 sineWaveBuffer [globalSoundOutput.secondaryBufferSize] = {};
+    
+    local_persist R32 tSine;
+    S16 toneVolume = 3000;
+    int wavePeriod = globalSoundOutput.samplesPerSecond/globalSoundOutput.toneHz;
+    
+    S16 *sampleOut = sineWaveBuffer;
+    for(int sampleIndex = 0;
+        sampleIndex < SoundBuffer->SampleCount;
+        ++sampleIndex)
+    {
+        // TODO(casey): Draw this out for people
+        real32 SineValue = sinf(tSine);
+        int16 SampleValue = (int16)(SineValue * ToneVolume);
+        *sampleOut++ = SampleValue;
+        *sampleOut++ = SampleValue;
+        
+        tSine += 2.0f*Pi32*1.0f/(real32)WavePeriod;
+    }
+}
+#endif
