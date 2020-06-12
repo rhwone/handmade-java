@@ -237,9 +237,6 @@ JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_playSound(J
     jboolean isCopy = 0;
     jshort *samples = env->GetShortArrayElements(javaSoundBuffer, &isCopy);
     
-    DWORD playCursor;
-    DWORD writeCursor;
-    
     jshort *zero = samples + 0;
     jshort *ten = samples + 10;
     jshort *twentyfive = samples + 25;
@@ -251,7 +248,8 @@ JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_playSound(J
     printf("%d\n", *twohundred);
     
     
-    //printf("playSquareWave called\n");
+    DWORD playCursor;
+    DWORD writeCursor;
     
     if(SUCCEEDED(globalSecondaryBuffer->GetCurrentPosition(&playCursor, &writeCursor)))
     {
@@ -276,62 +274,76 @@ JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_playSound(J
         win32FillSoundBuffer(byteToLock, bytesToWrite, samples);
     }
 }
-#if 0
-internal void createSineWave()
+
+/*
+     * Class:     se_abjorklund_win32_jna_dsound_DSoundJNI
+     * Method:    getSoundBufferByteInfo
+     * Signature: ()Lse/abjorklund/win32/jna/dsound/DSoundJNI/DSoundByteInfo;
+     */
+JNIEXPORT jobject JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_getSoundBufferByteInfo
+(JNIEnv *env, jobject thisObject)
 {
-    DWORD byteToLock = 0;
-    DWORD targetCursor = 0;
-    DWORD bytesToWrite = 0;
-    DWORD playCursor = 0;
-    DWORD writeCursor = 0;
-    B32 soundIsValid = false;
-    // TODO(casey): Tighten up sound logic so that we know where we should be
-    // writing to and can anticipate the time spent in the game update.
-    if(SUCCEEDED(GlobalSecondaryBuffer->GetCurrentPosition(&playCursor, &writeCursor)))
+    DWORD playCursor;
+    DWORD writeCursor;
+    
+    if(SUCCEEDED(globalSecondaryBuffer->GetCurrentPosition(&playCursor, &writeCursor)))
     {
-        byteToLock = ((SoundOutput.RunningSampleIndex*SoundOutput.BytesPerSample) %
-                      SoundOutput.SecondaryBufferSize);
+        printf("GetCurrentPosition succeeded\n");
+        printf("");
         
-        targetCursor =
-            ((playCursor +
-              (SoundOutput.LatencySampleCount*SoundOutput.BytesPerSample)) %
-             SoundOutput.SecondaryBufferSize);
-        if(byteToLock > targetCursor)
+        DWORD byteToLock = (globalSoundOutput.runningSampleIndex*globalSoundOutput.bytesPerSample) % globalSoundOutput.secondaryBufferSize;
+        DWORD bytesToWrite;
+        if(byteToLock == playCursor)
         {
-            bytesToWrite = (SoundOutput.SecondaryBufferSize - byteToLock);
-            bytesToWrite += targetCursor;
+            bytesToWrite = 0;
         }
-        else
+        else if(byteToLock > playCursor)
         {
-            bytesToWrite = targetCursor - byteToLock;
+            bytesToWrite = (globalSoundOutput.secondaryBufferSize - byteToLock);
+            bytesToWrite += playCursor;
+        }
+        else {
+            bytesToWrite = playCursor - byteToLock;
         }
         
-        soundIsValid = true;
+        win32FillSoundBuffer(byteToLock, bytesToWrite, 0);
     }
     
-    game_sound_output_buffer SoundBuffer = {};
-    SoundBuffer.SamplesPerSecond = SoundOutput.SamplesPerSecond;
-    SoundBuffer.SampleCount = bytesToWrite / SoundOutput.BytesPerSample;
-    SoundBuffer.Samples = Samples;
-    
-    S16 sineWaveBuffer [globalSoundOutput.secondaryBufferSize] = {};
-    
-    local_persist R32 tSine;
-    S16 toneVolume = 3000;
-    int wavePeriod = globalSoundOutput.samplesPerSecond/globalSoundOutput.toneHz;
-    
-    S16 *sampleOut = sineWaveBuffer;
-    for(int sampleIndex = 0;
-        sampleIndex < SoundBuffer->SampleCount;
-        ++sampleIndex)
-    {
-        // TODO(casey): Draw this out for people
-        real32 SineValue = sinf(tSine);
-        int16 SampleValue = (int16)(SineValue * ToneVolume);
-        *sampleOut++ = SampleValue;
-        *sampleOut++ = SampleValue;
-        
-        tSine += 2.0f*Pi32*1.0f/(real32)WavePeriod;
-    }
+    return 0;
 }
-#endif
+
+/*
+     * Class:     se_abjorklund_win32_jna_dsound_DSoundJNI
+     * Method:    getCurrentPosition
+     * Signature: (Lcom/sun/jna/platform/win32/WinDef/DWORD;Lcom/sun/jna/platform/win32/WinDef/DWORD;)V
+     */
+JNIEXPORT jobject JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_getCurrentPosition
+(JNIEnv *env, jobject thisObject)
+{
+    jclass javaLocalClass = env->FindClass("se/abjorklund/win32/jna/dsound/DSoundJNI$DSoundCursorInfo");
+    
+    if (javaLocalClass == NULL) {
+        printf("Find Class Failed.\n");
+    } else {
+        printf("Found class.\n");
+    }
+    
+    jclass javaGlobalClass = reinterpret_cast<jclass>(env->NewGlobalRef(javaLocalClass));
+    
+    jmethodID javaConstructor = env->GetMethodID(javaGlobalClass, "<init>", "(Lse/abjorklund/win32/jna/dsound/DSoundJNI;III)V");
+    
+    if (javaConstructor == NULL) {
+        printf("Find method Failed.\n");
+    } else {
+        printf("Found method.\n");
+    }
+    DWORD pCursor = {};
+    DWORD wCursor = {};
+    HRESULT hResult = globalSecondaryBuffer->GetCurrentPosition(&pCursor, &wCursor);
+    
+    printf("pCursor: %d\n", pCursor);
+    printf("wCursor: %d\n", wCursor);
+    
+    jobject infoObject = env->NewObject(javaLocalClass, javaConstructor, thisObject, hResult, pCursor, wCursor);
+    return infoObject;
+}

@@ -1,3 +1,6 @@
 
 //Compile DSoundJNI.cpp
 cl -I..\iaca-win64\ DSoundJNI.cpp -LD /link -PDB:DSoundJNI.pdb /DEBUG:FULL user32.lib
+
+//Compile java jni header
+javac -cp ..\..\..\..\..\..\jna-lib\jna.jar;..\..\..\..\..\..\jna-lib\jna-platform.jar -h . DSoundJNI.java

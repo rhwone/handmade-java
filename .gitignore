@@ -511,3 +511,5 @@ healthchecksdb
 MigrationBackup/
 
 # End of https://www.gitignore.io/api/c,c++,intellij,visualstudio
+/src/se/abjorklund/win32/jna/dsound/DSoundJNI$DSoundByteInfo.class
+/src/se/abjorklund/win32/jna/dsound/DSoundJNI$DSoundCursorInfo.class

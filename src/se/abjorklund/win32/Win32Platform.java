@@ -116,7 +116,6 @@ public class Win32Platform implements WindowProc {
                     LARGE_INTEGER lastCounter = new LARGE_INTEGER();
                     IKERNEL32.QueryPerformanceCounter(lastCounter);
 
-
                     while (running) {
                         MSG message = new MSG();
                         while (IUSER32.PeekMessage(message, null, 0, 0, PM_REMOVE)) {
@@ -186,6 +185,15 @@ public class Win32Platform implements WindowProc {
                             shortArray[i] = i;
                         }
                         DSOUND_JNI.playSound(shortArray);
+
+                        DWORD playCursor = new DWORD();
+                        DWORD writeCursor = new DWORD();
+
+
+                        DSoundJNI.DSoundCursorInfo info = DSOUND_JNI.getCurrentPosition();
+
+                        System.out.println("Java pCursor: " + info.getPlayCursor());
+                        System.out.println("Java wCursor: " + info.getWriteCursor());
 
                         HDC deviceContext = IUSER32.GetDC(window);
                         Win32WindowDimension dimension = getWindowDimension(window);
