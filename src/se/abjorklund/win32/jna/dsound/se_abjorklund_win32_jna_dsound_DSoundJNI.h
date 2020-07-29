@@ -33,18 +33,18 @@ extern "C" {
     
     /*
      * Class:     se_abjorklund_win32_jna_dsound_DSoundJNI
-     * Method:    getSoundBufferByteInfo
-     * Signature: ()Lse/abjorklund/win32/jna/dsound/DSoundJNI/DSoundByteInfo;
-     */
-    JNIEXPORT jobject JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_getSoundBufferByteInfo
-        (JNIEnv *, jobject);
-    
-    /*
-     * Class:     se_abjorklund_win32_jna_dsound_DSoundJNI
      * Method:    getCurrentPosition
      * Signature: ()Lse/abjorklund/win32/jna/dsound/DSoundJNI/DSoundCursorInfo;
      */
     JNIEXPORT jobject JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_getCurrentPosition
+        (JNIEnv *, jobject);
+    
+    /*
+     * Class:     se_abjorklund_win32_jna_dsound_DSoundJNI
+     * Method:    getGlobalSoundOutput
+     * Signature: ()Lse/abjorklund/win32/jna/dsound/DSoundJNI/DSoundGlobalSoundOutput;
+     */
+    JNIEXPORT jobject JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_getGlobalSoundOutput
         (JNIEnv *, jobject);
     
 #ifdef __cplusplus

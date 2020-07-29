@@ -1,7 +1,7 @@
 package se.abjorklund.win32.jna.dsound;
 
-import com.sun.jna.platform.win32.WinDef;
-import com.sun.jna.platform.win32.WinNT;
+import com.sun.jna.platform.win32.WinDef.DWORD;
+import com.sun.jna.platform.win32.WinNT.HRESULT;
 
 public class DSoundJNI {
     static {
@@ -14,37 +14,80 @@ public class DSoundJNI {
 
     public native void playSound(short[] buffer);
 
-    public native DSoundByteInfo getSoundBufferByteInfo();
-
     public native DSoundCursorInfo getCurrentPosition();
 
-    public class DSoundByteInfo {
-        public WinDef.DWORD byteToLock;
-        public WinDef.DWORD bytesToWrite;
-    }
+    public native DSoundGlobalSoundOutput getGlobalSoundOutput();
 
     public class DSoundCursorInfo {
 
-        private int hResult;
-        private int playCursor;
-        private int writeCursor;
+        private HRESULT hResult;
+        private DWORD playCursor;
+        private DWORD writeCursor;
 
         public DSoundCursorInfo(int hResult, int playCursor, int writeCursor) {
-            this.hResult = hResult;
-            this.playCursor = playCursor;
-            this.writeCursor = writeCursor;
+            this.hResult = new HRESULT(hResult);
+            this.playCursor = new DWORD(playCursor);
+            this.writeCursor = new DWORD(writeCursor);
         }
 
-        public int gethResult() {
+        public HRESULT getHResult() {
             return hResult;
         }
 
-        public int getPlayCursor() {
+        public DWORD getPlayCursor() {
             return playCursor;
         }
 
-        public int getWriteCursor() {
+        public DWORD getWriteCursor() {
             return writeCursor;
+        }
+    }
+
+    public class DSoundGlobalSoundOutput {
+        private int toneHz;
+        private int samplesPerSecond;
+        private int toneVolume;
+        private int runningSampleIndex;
+        private int wavePeriod;
+        private int bytesPerSample;
+        private int secondaryBufferSize;
+
+        public DSoundGlobalSoundOutput(int toneHz, int samplesPerSecond, int toneVolume, int runningSampleIndex, int wavePeriod, int bytesPerSample, int secondaryBufferSize) {
+            this.toneHz = toneHz;
+            this.samplesPerSecond = samplesPerSecond;
+            this.toneVolume = toneVolume;
+            this.runningSampleIndex = runningSampleIndex;
+            this.wavePeriod = wavePeriod;
+            this.bytesPerSample = bytesPerSample;
+            this.secondaryBufferSize = secondaryBufferSize;
+        }
+
+        public int getToneHz() {
+            return toneHz;
+        }
+
+        public int getSamplesPerSecond() {
+            return samplesPerSecond;
+        }
+
+        public int getToneVolume() {
+            return toneVolume;
+        }
+
+        public int getRunningSampleIndex() {
+            return runningSampleIndex;
+        }
+
+        public int getWavePeriod() {
+            return wavePeriod;
+        }
+
+        public int getBytesPerSample() {
+            return bytesPerSample;
+        }
+
+        public int getSecondaryBufferSize() {
+            return secondaryBufferSize;
         }
     }
 }

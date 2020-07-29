@@ -63,6 +63,7 @@ struct Win32SoundOutput
 
 global_variable LPDIRECTSOUNDBUFFER globalSecondaryBuffer;
 global_variable Win32SoundOutput globalSoundOutput;
+global_variable B32 initialized = false;
 
 #define DIRECT_SOUND_CREATE(name) HRESULT WINAPI name(LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS,   LPUNKNOWN pUnkOuter)
 typedef DIRECT_SOUND_CREATE(direct_sound_create);
@@ -220,7 +221,7 @@ JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_initDSound
     {
         //TODO: diagnostics
     }
-    
+    initialized = true;
     jshort *samples = {};
     win32FillSoundBuffer(0, globalSoundOutput.secondaryBufferSize, samples);
     globalSecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
@@ -315,7 +316,7 @@ JNIEXPORT jobject JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_getSound
 /*
      * Class:     se_abjorklund_win32_jna_dsound_DSoundJNI
      * Method:    getCurrentPosition
-     * Signature: (Lcom/sun/jna/platform/win32/WinDef/DWORD;Lcom/sun/jna/platform/win32/WinDef/DWORD;)V
+     * Signature: ()Lse/abjorklund/win32/jna/dsound/DSoundJNI/DSoundCursorInfo;
      */
 JNIEXPORT jobject JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_getCurrentPosition
 (JNIEnv *env, jobject thisObject)
@@ -344,6 +345,45 @@ JNIEXPORT jobject JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_getCurre
     printf("pCursor: %d\n", pCursor);
     printf("wCursor: %d\n", wCursor);
     
-    jobject infoObject = env->NewObject(javaLocalClass, javaConstructor, thisObject, hResult, pCursor, wCursor);
-    return infoObject;
+    jobject result = env->NewObject(javaLocalClass, javaConstructor, thisObject, hResult, pCursor, wCursor);
+    return result;
+}
+
+/*
+     * Class:     se_abjorklund_win32_jna_dsound_DSoundJNI
+     * Method:    getGlobalSoundOutput
+     * Signature: ()Lse/abjorklund/win32/jna/dsound/DSoundJNI/DSoundGlobalSoundOutput;
+     */
+JNIEXPORT jobject JNICALL Java_se_abjorklund_win32_jna_dsound_DSoundJNI_getGlobalSoundOutput
+(JNIEnv *env, jobject thisObject)
+{
+    jobject result = 0;
+    if(initialized){
+        
+        jclass javaLocalClass = env->FindClass("se/abjorklund/win32/jna/dsound/DSoundJNI$DSoundGlobalSoundOutput");
+        
+        if (javaLocalClass == NULL) {
+            printf("Find Class Failed.\n");
+        } else {
+            printf("Found class.\n");
+        }
+        
+        jclass javaGlobalClass = reinterpret_cast<jclass>(env->NewGlobalRef(javaLocalClass));
+        
+        jmethodID javaConstructor = env->GetMethodID(javaGlobalClass, "<init>", "(Lse/abjorklund/win32/jna/dsound/DSoundJNI;IIIIIII)V");
+        
+        if (javaConstructor == NULL) {
+            printf("Find method Failed.\n");
+        } else {
+            printf("Found method.\n");
+        }
+        
+        result = env->NewObject(javaLocalClass, javaConstructor, thisObject, globalSoundOutput.toneHz, globalSoundOutput.samplesPerSecond, globalSoundOutput.toneVolume, globalSoundOutput.runningSampleIndex, globalSoundOutput.wavePeriod, globalSoundOutput.bytesPerSample, globalSoundOutput.secondaryBufferSize);
+    }
+    else 
+    {
+        printf("DSoundJNI not initialized.");
+    }
+    
+    return result;
 }

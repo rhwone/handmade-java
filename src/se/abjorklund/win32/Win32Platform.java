@@ -14,6 +14,8 @@ import se.abjorklund.win32.jna.IGdi32;
 import se.abjorklund.win32.jna.IKernel32;
 import se.abjorklund.win32.jna.IUser32;
 import se.abjorklund.win32.jna.dsound.DSoundJNI;
+import se.abjorklund.win32.jna.dsound.DSoundJNI.DSoundCursorInfo;
+import se.abjorklund.win32.jna.dsound.DSoundJNI.DSoundGlobalSoundOutput;
 import se.abjorklund.win32.jna.xinput.*;
 
 import static com.sun.jna.platform.win32.WinGDI.BI_RGB;
@@ -186,14 +188,39 @@ public class Win32Platform implements WindowProc {
                         }
                         DSOUND_JNI.playSound(shortArray);
 
-                        DWORD playCursor = new DWORD();
-                        DWORD writeCursor = new DWORD();
+                        DSoundCursorInfo info = DSOUND_JNI.getCurrentPosition();
 
+                        DSoundGlobalSoundOutput globalSoundOutput = DSOUND_JNI.getGlobalSoundOutput();
 
-                        DSoundJNI.DSoundCursorInfo info = DSOUND_JNI.getCurrentPosition();
+                        int pCursor = info.getPlayCursor().intValue();
+                        int wCursor = info.getWriteCursor().intValue();
 
-                        System.out.println("Java pCursor: " + info.getPlayCursor());
-                        System.out.println("Java wCursor: " + info.getWriteCursor());
+                        if (info.getHResult().intValue() >= 0) {
+
+                            DWORD byteToLock = new DWORD();
+                            int runningSampleIndex = globalSoundOutput.getRunningSampleIndex();
+                            int bytesPerSample = globalSoundOutput.getBytesPerSample();
+                            int secondaryBufferSize = globalSoundOutput.getSecondaryBufferSize();
+
+                            byteToLock.setValue((runningSampleIndex * bytesPerSample) % secondaryBufferSize);
+                            DWORD bytesToWrite = new DWORD();
+                            if(byteToLock.intValue() == pCursor)
+                            {
+                                bytesToWrite.setValue(0);
+                            }
+                            else if(byteToLock.intValue() > pCursor)
+                            {
+                                bytesToWrite.setValue(secondaryBufferSize - byteToLock.intValue());
+                                bytesToWrite.setValue(bytesToWrite.intValue() + pCursor);
+                            }
+                            else {
+                                bytesToWrite.setValue(pCursor - byteToLock.intValue());
+                            }
+
+                            int breakhere = 0;
+                            //win32FillSoundBuffer(byteToLock, bytesToWrite, 0);
+                        }
+
 
                         HDC deviceContext = IUSER32.GetDC(window);
                         Win32WindowDimension dimension = getWindowDimension(window);
@@ -220,6 +247,7 @@ public class Win32Platform implements WindowProc {
         } else {
             //TODO(anders): logging
         }
+
     }
 
     private GameOffscreenBuffer getGameOffscreenBuffer() {
