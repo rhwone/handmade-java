@@ -4,11 +4,11 @@ import com.sun.jna.Pointer;
 
 public class Game {
 
-    public void gameUpdateAndRender(GameOffscreenBuffer buffer) {
+    public void gameUpdateAndRender(GameOffscreenBuffer buffer, int xOffset, int yOffset) {
 
         //TODO(anders): Allow sample offsets here for more robust platform options
         //gameOutputSound(soundBuffer);
-        renderWeirdGradient(buffer, 0, 0);
+        renderWeirdGradient(buffer, xOffset, yOffset);
     }
 
     private void gameOutputSound(GameSoundOutputBuffer soundBuffer) {

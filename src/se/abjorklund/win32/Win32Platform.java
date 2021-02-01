@@ -4,7 +4,6 @@ import com.sun.jna.Pointer;
 import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.WinDef.*;
 import com.sun.jna.platform.win32.WinGDI;
-import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.platform.win32.WinUser.MSG;
 import com.sun.jna.platform.win32.WinUser.WNDCLASSEX;
 import com.sun.jna.platform.win32.WinUser.WindowProc;
@@ -16,6 +15,7 @@ import se.abjorklund.win32.jna.IUser32;
 import se.abjorklund.win32.jna.dsound.DSoundJNI;
 import se.abjorklund.win32.jna.dsound.DSoundJNI.DSoundCursorInfo;
 import se.abjorklund.win32.jna.dsound.DSoundJNI.DSoundGlobalSoundOutput;
+import se.abjorklund.win32.jna.xaudio2.XAudio2JNI;
 import se.abjorklund.win32.jna.xinput.*;
 
 import static com.sun.jna.platform.win32.WinGDI.BI_RGB;
@@ -32,6 +32,8 @@ public class Win32Platform implements WindowProc {
     private static final DWORD SRCCOPY = new DWORD(13369376);
     public static final int SIZE_OF_INT = 4;
 
+    public static final double PI_32 = 3.14159265359f;
+
     private final WNDCLASSEX windowClass;
     private static boolean running;
     private static final Win32OffscreenBuffer globalBackBuffer = new Win32OffscreenBuffer();
@@ -44,7 +46,8 @@ public class Win32Platform implements WindowProc {
     private final IGdi32 IGDI32;
 
     //CUSTOM JNI INSTANCES
-    private static final DSoundJNI DSOUND_JNI = new DSoundJNI();
+    private static final DSoundJNI D_SOUND_JNI = new DSoundJNI();
+    private static final XAudio2JNI X_AUDIO_2_JNI = new XAudio2JNI();
 
     public Win32Platform() {
         String osName = System.getProperty("os.name");
@@ -112,11 +115,16 @@ public class Win32Platform implements WindowProc {
                     running = true;
                     int xOffset = 0;
                     int yOffset = 0;
-                    int squareWaveCounter = 0;
-                    DSOUND_JNI.initDSound();
+
+                    //D_SOUND_JNI.initDSound();
+                    X_AUDIO_2_JNI.initXAudio2();
 
                     LARGE_INTEGER lastCounter = new LARGE_INTEGER();
                     IKERNEL32.QueryPerformanceCounter(lastCounter);
+
+                    int hz = 256;
+                    int squareWaveCounter = 0;
+                    int squareWavePeriod = 48000/hz;
 
                     while (running) {
                         MSG message = new MSG();
@@ -179,18 +187,36 @@ public class Win32Platform implements WindowProc {
                             }
                         }
                         GameOffscreenBuffer gameOffscreenBuffer = getGameOffscreenBuffer();
-                        game.gameUpdateAndRender(gameOffscreenBuffer);
+                        game.gameUpdateAndRender(gameOffscreenBuffer, xOffset, yOffset);
 
-                        short[] shortArray = new short[256];
 
-                        for (short i = 0; i < 256; i++) {
-                            shortArray[i] = i;
+                        /*DSoundGlobalSoundOutput globalSoundOutput = D_SOUND_JNI.getGlobalSoundOutput();
+                        int bufferSampleCount = globalSoundOutput.getSecondaryBufferSize() / globalSoundOutput.getBytesPerSample();
+                        short[] samples = new short[bufferSampleCount];
+
+                        *//*for (int i = 0; i < bufferSampleCount; ) {
+                            double t = 2.0 * PI_32 * i / globalSoundOutput.getWavePeriod();
+                            double sineValue = Math.sin(t);
+                            short sampleValue = (short) (sineValue * globalSoundOutput.getToneVolume());
+                            samples[i++] = sampleValue;
+                            samples[i++] = sampleValue;
+                        }*//*
+
+                        for (int sampleIndex = 0; sampleIndex < bufferSampleCount; ) {
+                            if (squareWaveCounter == 0) {
+                                squareWaveCounter = squareWavePeriod;
+                            }
+                            --squareWaveCounter;
+                            short sampleValue = (squareWaveCounter > (squareWavePeriod/2)) ? (short)5000 : -5000;
+                            samples[sampleIndex++] = sampleValue;
+                            samples[sampleIndex++] = sampleValue;
                         }
-                        DSOUND_JNI.playSound(shortArray);
 
-                        DSoundCursorInfo info = DSOUND_JNI.getCurrentPosition();
 
-                        DSoundGlobalSoundOutput globalSoundOutput = DSOUND_JNI.getGlobalSoundOutput();
+                        D_SOUND_JNI.playSound(samples);
+
+                        DSoundCursorInfo info = D_SOUND_JNI.getCurrentPosition();
+
 
                         int pCursor = info.getPlayCursor().intValue();
                         int wCursor = info.getWriteCursor().intValue();
@@ -204,22 +230,18 @@ public class Win32Platform implements WindowProc {
 
                             byteToLock.setValue((runningSampleIndex * bytesPerSample) % secondaryBufferSize);
                             DWORD bytesToWrite = new DWORD();
-                            if(byteToLock.intValue() == pCursor)
-                            {
+                            if (byteToLock.intValue() == pCursor) {
                                 bytesToWrite.setValue(0);
-                            }
-                            else if(byteToLock.intValue() > pCursor)
-                            {
+                            } else if (byteToLock.intValue() > pCursor) {
                                 bytesToWrite.setValue(secondaryBufferSize - byteToLock.intValue());
                                 bytesToWrite.setValue(bytesToWrite.intValue() + pCursor);
-                            }
-                            else {
+                            } else {
                                 bytesToWrite.setValue(pCursor - byteToLock.intValue());
                             }
 
                             int breakhere = 0;
                             //win32FillSoundBuffer(byteToLock, bytesToWrite, 0);
-                        }
+                        }*/
 
 
                         HDC deviceContext = IUSER32.GetDC(window);
