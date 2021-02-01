@@ -26,6 +26,9 @@
 #define fourccDPDS 'sdpd'
 #endif
 
+static IXAudio2 *pXAudio2;
+static IXAudio2MasteringVoice *pMasterVoice;
+
 HRESULT FindChunk(HANDLE hFile, DWORD fourcc, DWORD &dwChunkSize, DWORD &dwChunkDataPosition)
 {
     HRESULT hr = S_OK;
@@ -94,7 +97,7 @@ HRESULT ReadChunkData(HANDLE hFile, void *buffer, DWORD buffersize, DWORD buffer
 HANDLE LoadFile(char *filePath)
 {
     HRESULT hr = S_OK;
-    #ifdef _XBOX
+#ifdef _XBOX
     char *strFileName = filePath;
 #else
     TCHAR *strFileName = TEXT(filePath);
@@ -122,6 +125,42 @@ HANDLE LoadFile(char *filePath)
     return hFile;
 }
 
+void StartPlayingFile(HANDLE hFile)
+{
+    WAVEFORMATEXTENSIBLE wfx = {0};
+    XAUDIO2_BUFFER xaudio2Buffer = {0};
+    DWORD dwChunkSize;
+    DWORD dwChunkPosition;
+    //check the file type, should be fourccWAVE or 'XWMA'
+    FindChunk(hFile, fourccRIFF, dwChunkSize, dwChunkPosition);
+    DWORD filetype;
+    ReadChunkData(hFile, &filetype, sizeof(DWORD), dwChunkPosition);
+    if (filetype != fourccWAVE){
+        //Handle this
+    }
+
+    FindChunk(hFile, fourccFMT, dwChunkSize, dwChunkPosition);
+    ReadChunkData(hFile, &wfx, dwChunkSize, dwChunkPosition);
+
+    //fill out the audio data buffer with the contents of the fourccDATA chunk
+    FindChunk(hFile, fourccDATA, dwChunkSize, dwChunkPosition);
+    BYTE *pDataBuffer = new BYTE[dwChunkSize];
+    ReadChunkData(hFile, pDataBuffer, dwChunkSize, dwChunkPosition);
+
+    xaudio2Buffer.AudioBytes = dwChunkSize;      //size of the audio buffer in bytes
+    xaudio2Buffer.pAudioData = pDataBuffer;      //buffer containing audio data
+    xaudio2Buffer.Flags = XAUDIO2_END_OF_STREAM; // tell the source voice not to expect any data after this buffer
+    xaudio2Buffer.LoopCount = XAUDIO2_LOOP_INFINITE;
+    xaudio2Buffer.LoopBegin = 0;
+
+    IXAudio2SourceVoice *pSourceVoice;
+    pXAudio2->CreateSourceVoice(&pSourceVoice, (WAVEFORMATEX *)&wfx);
+
+    pSourceVoice->SubmitSourceBuffer(&xaudio2Buffer);
+
+    pSourceVoice->Start(0);
+}
+
 HRESULT init()
 {
     HRESULT hr;
@@ -133,95 +172,23 @@ HRESULT init()
 
     printf("COM initialized\n");
 
-    IXAudio2 *pXAudio2 = nullptr;
+    pXAudio2 = nullptr;
     if (FAILED(hr = XAudio2Create(&pXAudio2, 0, XAUDIO2_DEFAULT_PROCESSOR)))
         return hr;
 
     printf("XAudio2 Engine created\n");
 
-    IXAudio2MasteringVoice *pMasterVoice = nullptr;
+    pMasterVoice = nullptr;
     if (FAILED(hr = pXAudio2->CreateMasteringVoice(&pMasterVoice)))
         return hr;
 
     printf("Mastering voice created\n");
 
-    WAVEFORMATEXTENSIBLE wfx = {0};
-    XAUDIO2_BUFFER alarm02buffer = {0};
-
-    
-
     HANDLE alarm02File = LoadFile("G:\\handmade-java\\src\\se\\abjorklund\\win32\\jna\\xaudio2\\Alarm02.wav");
-
-    DWORD dwChunkSize;
-    DWORD dwChunkPosition;
-    //check the file type, should be fourccWAVE or 'XWMA'
-    FindChunk(alarm02File, fourccRIFF, dwChunkSize, dwChunkPosition);
-    DWORD filetype;
-    ReadChunkData(alarm02File, &filetype, sizeof(DWORD), dwChunkPosition);
-    if (filetype != fourccWAVE)
-        return S_FALSE;
-
-    FindChunk(alarm02File, fourccFMT, dwChunkSize, dwChunkPosition);
-    ReadChunkData(alarm02File, &wfx, dwChunkSize, dwChunkPosition);
-
-    //fill out the audio data buffer with the contents of the fourccDATA chunk
-    FindChunk(alarm02File, fourccDATA, dwChunkSize, dwChunkPosition);
-    BYTE *pDataBuffer = new BYTE[dwChunkSize];
-    ReadChunkData(alarm02File, pDataBuffer, dwChunkSize, dwChunkPosition);
-
-    alarm02buffer.AudioBytes = dwChunkSize;      //size of the audio buffer in bytes
-    alarm02buffer.pAudioData = pDataBuffer;      //buffer containing audio data
-    alarm02buffer.Flags = XAUDIO2_END_OF_STREAM; // tell the source voice not to expect any data after this buffer
-    alarm02buffer.LoopCount = XAUDIO2_LOOP_INFINITE;
-    alarm02buffer.LoopBegin = 0;
-
-    IXAudio2SourceVoice *pSourceVoice;
-    if (FAILED(hr = pXAudio2->CreateSourceVoice(&pSourceVoice, (WAVEFORMATEX *)&wfx)))
-        return hr;
-
-    if (FAILED(hr = pSourceVoice->SubmitSourceBuffer(&alarm02buffer)))
-        return hr;
-
-    if (FAILED(hr = pSourceVoice->Start(0)))
-        return hr;
-
-    WAVEFORMATEXTENSIBLE wfx2 = {0};
-    XAUDIO2_BUFFER ring09buffer = {0};
-    
+    StartPlayingFile(alarm02File);
+ 
     HANDLE ring09File = LoadFile("G:\\handmade-java\\src\\se\\abjorklund\\win32\\jna\\xaudio2\\Ring09.wav");
-    
-    DWORD dwChunkSize2;
-    DWORD dwChunkPosition2;
-    //check the file type, should be fourccWAVE or 'XWMA'
-    FindChunk(ring09File, fourccRIFF, dwChunkSize2, dwChunkPosition2);
-    DWORD filetype2;
-    ReadChunkData(ring09File, &filetype2, sizeof(DWORD), dwChunkPosition2);
-    if (filetype2 != fourccWAVE)
-        return S_FALSE;
-
-    FindChunk(ring09File, fourccFMT, dwChunkSize2, dwChunkPosition2);
-    ReadChunkData(ring09File, &wfx2, dwChunkSize2, dwChunkPosition2);
-
-    //fill out the audio data buffer with the contents of the fourccDATA chunk
-    FindChunk(ring09File, fourccDATA, dwChunkSize2, dwChunkPosition2);
-    BYTE *pDataBuffer2 = new BYTE[dwChunkSize2];
-    ReadChunkData(ring09File, pDataBuffer2, dwChunkSize2, dwChunkPosition2);
-
-    ring09buffer.AudioBytes = dwChunkSize2;     //size of the audio buffer in bytes
-    ring09buffer.pAudioData = pDataBuffer2;     //buffer containing audio data
-    ring09buffer.Flags = XAUDIO2_END_OF_STREAM; // tell the source voice not to expect any data after this buffer
-    ring09buffer.LoopCount = XAUDIO2_LOOP_INFINITE;
-    ring09buffer.LoopBegin = 0;
-
-    IXAudio2SourceVoice *pSourceVoice2;
-    if (FAILED(hr = pXAudio2->CreateSourceVoice(&pSourceVoice2, (WAVEFORMATEX *)&wfx2)))
-        return hr;
-
-    if (FAILED(hr = pSourceVoice2->SubmitSourceBuffer(&ring09buffer)))
-        return hr;
-
-    if (FAILED(hr = pSourceVoice2->Start(0)))
-        return hr;
+    StartPlayingFile(ring09File);
 
     return hr;
 }
