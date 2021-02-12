@@ -7,6 +7,8 @@
 #include <math.h>
 #include <xaudio2.h>
 #include "se_abjorklund_win32_jna_xaudio2_XAudio2JNI.h"
+#include <cstdint>
+#include <cstring>
 
 #ifdef _XBOX //Big-Endian
 #define fourccRIFF 'RIFF'
@@ -28,6 +30,10 @@
 
 static IXAudio2 *pXAudio2;
 static IXAudio2MasteringVoice *pMasterVoice;
+static IXAudio2SourceVoice *sourceVoices[2];
+static int sourceVoiceCount = 0;
+static XAUDIO2_BUFFER *sourceVoiceBuffers[2];
+static int sourceVoiceBufferCount = 0;
 
 HRESULT FindChunk(HANDLE hFile, DWORD fourcc, DWORD &dwChunkSize, DWORD &dwChunkDataPosition)
 {
@@ -125,7 +131,7 @@ HANDLE LoadFile(char *filePath)
     return hFile;
 }
 
-void StartPlayingFile(HANDLE hFile)
+void CreateSourceVoice(HANDLE hFile, byte* soundBuffer, jsize bufferSize)
 {
     WAVEFORMATEXTENSIBLE wfx = {0};
     XAUDIO2_BUFFER xaudio2Buffer = {0};
@@ -135,7 +141,8 @@ void StartPlayingFile(HANDLE hFile)
     FindChunk(hFile, fourccRIFF, dwChunkSize, dwChunkPosition);
     DWORD filetype;
     ReadChunkData(hFile, &filetype, sizeof(DWORD), dwChunkPosition);
-    if (filetype != fourccWAVE){
+    if (filetype != fourccWAVE)
+    {
         //Handle this
     }
 
@@ -144,13 +151,13 @@ void StartPlayingFile(HANDLE hFile)
 
     //fill out the audio data buffer with the contents of the fourccDATA chunk
     FindChunk(hFile, fourccDATA, dwChunkSize, dwChunkPosition);
-    BYTE *pDataBuffer = new BYTE[dwChunkSize];
-    ReadChunkData(hFile, pDataBuffer, dwChunkSize, dwChunkPosition);
+    BYTE *pDataBuffer = (BYTE*)soundBuffer;
+    //ReadChunkData(hFile, pDataBuffer, dwChunkSize, dwChunkPosition);
 
-    xaudio2Buffer.AudioBytes = dwChunkSize;      //size of the audio buffer in bytes
+    xaudio2Buffer.AudioBytes = (DWORD) bufferSize;      //size of the audio buffer in bytes
     xaudio2Buffer.pAudioData = pDataBuffer;      //buffer containing audio data
     xaudio2Buffer.Flags = XAUDIO2_END_OF_STREAM; // tell the source voice not to expect any data after this buffer
-    xaudio2Buffer.LoopCount = XAUDIO2_LOOP_INFINITE;
+    xaudio2Buffer.LoopCount = 0;
     xaudio2Buffer.LoopBegin = 0;
 
     IXAudio2SourceVoice *pSourceVoice;
@@ -158,10 +165,17 @@ void StartPlayingFile(HANDLE hFile)
 
     pSourceVoice->SubmitSourceBuffer(&xaudio2Buffer);
 
+    sourceVoiceBuffers[sourceVoiceBufferCount] = &xaudio2Buffer;
+    sourceVoiceBufferCount++;
+
     pSourceVoice->Start(0);
 }
 
-HRESULT init()
+void loadSoundBuffers(){
+    
+}
+
+HRESULT init(byte* soundBuffer, jsize bufferSize)
 {
     HRESULT hr;
     hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -185,15 +199,39 @@ HRESULT init()
     printf("Mastering voice created\n");
 
     HANDLE alarm02File = LoadFile("G:\\handmade-java\\src\\se\\abjorklund\\win32\\jna\\xaudio2\\Alarm02.wav");
-    StartPlayingFile(alarm02File);
- 
-    HANDLE ring09File = LoadFile("G:\\handmade-java\\src\\se\\abjorklund\\win32\\jna\\xaudio2\\Ring09.wav");
-    StartPlayingFile(ring09File);
+    CreateSourceVoice(alarm02File, soundBuffer, bufferSize);
+
+    //HANDLE ring09File = LoadFile("G:\\handmade-java\\src\\se\\abjorklund\\win32\\jna\\xaudio2\\Ring09.wav");
+    //CreateSourceVoice(ring09File);
 
     return hr;
 }
 
-JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_xaudio2_XAudio2JNI_initXAudio2(JNIEnv *enb, jobject thisObject)
+JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_xaudio2_XAudio2JNI_initXAudio2(JNIEnv *env, jobject thisObject, jbyteArray soundBuffer)
 {
-    init();
+    jbyte* bufferPtr = env->GetByteArrayElements(soundBuffer, NULL);
+    jsize lengthOfArray = env->GetArrayLength(soundBuffer);
+    byte* copyTo = new byte [lengthOfArray];
+    std::memcpy(copyTo, bufferPtr, lengthOfArray);
+
+    printf("1st byte %d\n", *bufferPtr);
+    printf("10th byte %d\n", *bufferPtr + 9);
+
+    printf("1st byte copied %d\n", *copyTo);
+    printf("10th byte copied %d\n", *copyTo + 9);
+
+    printf("Length of soundbuffer %d\n", lengthOfArray);
+    init(copyTo, lengthOfArray);
+}
+
+JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_xaudio2_XAudio2JNI_startSource(JNIEnv *env, jobject thisObject, jint id)
+{
+    
+}
+
+JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_xaudio2_XAudio2JNI_stopSource(JNIEnv *env, jobject thisObject, jint id)
+{
+    IXAudio2SourceVoice *pSourceVoice = sourceVoices[id];
+    pSourceVoice->Stop(0);
+    pSourceVoice->DestroyVoice();
 }

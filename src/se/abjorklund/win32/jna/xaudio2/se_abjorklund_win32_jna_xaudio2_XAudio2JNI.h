@@ -10,10 +10,26 @@ extern "C" {
 /*
  * Class:     se_abjorklund_win32_jna_xaudio2_XAudio2JNI
  * Method:    initXAudio2
- * Signature: ()V
+ * Signature: ([B)V
  */
 JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_xaudio2_XAudio2JNI_initXAudio2
-  (JNIEnv *, jobject);
+  (JNIEnv *, jobject, jbyteArray);
+
+/*
+ * Class:     se_abjorklund_win32_jna_xaudio2_XAudio2JNI
+ * Method:    startSource
+ * Signature: (I)V
+ */
+JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_xaudio2_XAudio2JNI_startSource
+  (JNIEnv *, jobject, jint);
+
+/*
+ * Class:     se_abjorklund_win32_jna_xaudio2_XAudio2JNI
+ * Method:    stopSource
+ * Signature: (I)V
+ */
+JNIEXPORT void JNICALL Java_se_abjorklund_win32_jna_xaudio2_XAudio2JNI_stopSource
+  (JNIEnv *, jobject, jint);
 
 #ifdef __cplusplus
 }

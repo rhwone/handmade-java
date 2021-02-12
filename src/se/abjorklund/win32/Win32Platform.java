@@ -13,10 +13,15 @@ import se.abjorklund.win32.jna.IGdi32;
 import se.abjorklund.win32.jna.IKernel32;
 import se.abjorklund.win32.jna.IUser32;
 import se.abjorklund.win32.jna.dsound.DSoundJNI;
-import se.abjorklund.win32.jna.dsound.DSoundJNI.DSoundCursorInfo;
-import se.abjorklund.win32.jna.dsound.DSoundJNI.DSoundGlobalSoundOutput;
 import se.abjorklund.win32.jna.xaudio2.XAudio2JNI;
 import se.abjorklund.win32.jna.xinput.*;
+
+import javax.sound.sampled.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
 
 import static com.sun.jna.platform.win32.WinGDI.BI_RGB;
 import static java.awt.event.KeyEvent.*;
@@ -101,7 +106,7 @@ public class Win32Platform implements WindowProc {
         buffer.setMemory(memory);
     }
 
-    private void run() {
+    private void run() throws IOException, UnsupportedAudioFileException {
         win32resizeDIBSection(globalBackBuffer, 1280, 740);
         // register window class
         ATOM registerClassResult = IUSER32.RegisterClassEx(windowClass);
@@ -115,16 +120,37 @@ public class Win32Platform implements WindowProc {
                     running = true;
                     int xOffset = 0;
                     int yOffset = 0;
+                    String currentDir = System.getProperty("user.dir");
+                    System.out.println("Current dir using System:" + currentDir);
+                    File audioFile = new File("src/se/abjorklund/win32/jna/xaudio2/Ring09.wav");
+
+                    AudioInputStream audioInputStream = AudioSystem
+                            .getAudioInputStream(audioFile.getAbsoluteFile());
+
+                    int available = audioInputStream.available();
+                    byte[] buffer = new byte[available];
+
+                    audioInputStream.read(buffer);
+
 
                     //D_SOUND_JNI.initDSound();
-                    X_AUDIO_2_JNI.initXAudio2();
+                    X_AUDIO_2_JNI.initXAudio2(buffer);
+
+                    /*byte[] newBuffer = Arrays.copyOf(buffer, available);
+
+                    ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(newBuffer);
+                    AudioInputStream newInputStream = new AudioInputStream(byteArrayInputStream, audioInputStream.getFormat(), audioInputStream.getFrameLength());
+
+                    Clip clip = AudioSystem.getClip();
+                    clip.open(newInputStream);
+                    clip.start();*/
 
                     LARGE_INTEGER lastCounter = new LARGE_INTEGER();
                     IKERNEL32.QueryPerformanceCounter(lastCounter);
 
                     int hz = 256;
                     int squareWaveCounter = 0;
-                    int squareWavePeriod = 48000/hz;
+                    int squareWavePeriod = 48000 / hz;
 
                     while (running) {
                         MSG message = new MSG();
@@ -405,7 +431,7 @@ public class Win32Platform implements WindowProc {
         return rc;
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, UnsupportedAudioFileException, LineUnavailableException {
         Win32Platform win32Platform = new Win32Platform();
         win32Platform.run();
     }
