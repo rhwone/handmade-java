@@ -9,7 +9,7 @@
 
 #include "win32platform.h"
 
-#include "se_abjorklund_win32_platform_JNIPlatform.h"
+#include "se_abjorklund_win32_JNIPlatform.h"
 
 // TODO(casey): This is a global for now.
 global_variable bool32 globalRunning;

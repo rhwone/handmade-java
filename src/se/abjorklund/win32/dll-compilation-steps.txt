@@ -6,4 +6,4 @@ cl -MTd -nologo -Gm- -GR- -EHa- -Od -Oi -WX -W4 -wd4201 -wd4100 -wd4189 -wd4456 
 cl -I..\iaca-win64\ middleware.cpp -LD /link -PDB:middleware.pdb /DEBUG:FULL
 
 // Compile java jni header
-javac -cp ..\..\..\..\jna-lib\jna.jar;..\..\..\..\jna-lib\jna-platform.jar -h . JNI_Platform.java
+javac -cp ..\..\..\jna-lib\jna.jar;..\..\..\jna-lib\jna-platform.jar -h . JNIPlatform.java

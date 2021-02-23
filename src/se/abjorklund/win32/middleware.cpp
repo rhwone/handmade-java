@@ -2,16 +2,16 @@
 #include <stdio.h>
 #include <malloc.h>
 
-#include "se_abjorklund_win32_platform_JNIPlatform.h"
+#include "se_abjorklund_win32_JNIPlatform.h"
 
 typedef BOOL platform_loop(JNIEnv *env, jobject thisObj);
 
 static platform_loop *platformLoop;
 
-JNIEXPORT void JNICALL Java_se_abjorklund_win32_platform_JNIPlatform_start(JNIEnv *env, jobject thisObj)
+JNIEXPORT void JNICALL Java_se_abjorklund_win32_JNIPlatform_start(JNIEnv *env, jobject thisObj)
 {
 
-    HMODULE platformDLL = LoadLibraryA("D:\\dev\\handmade-java\\src\\se\\abjorklund\\win32\\platform\\win32platform.dll");
+    HMODULE platformDLL = LoadLibraryA("D:\\dev\\handmade-java\\src\\se\\abjorklund\\win32\\win32platform.dll");
 
     if (platformDLL)
     {

@@ -1,6 +1,6 @@
 package se.abjorklund.game;
 
-import se.abjorklund.win32.platform.JNIPlatform;
+import se.abjorklund.win32.JNIPlatform;
 
 public class Game {
     private static final JNIPlatform JNI_PLATFORM = new JNIPlatform();
