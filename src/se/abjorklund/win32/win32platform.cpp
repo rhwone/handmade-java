@@ -1298,7 +1298,6 @@ extern "C"
 {
     __declspec(dllexport) void startPlatformLoop(JNIEnv *env, jobject thisObj)
     {
-        globalVideoBuffer = {0};
         globalVideoBuffer = new byte[VIDEO_BUFFER_SIZE];
         globalJNIEnv = env;
         globalThisObjPointer = thisObj;
