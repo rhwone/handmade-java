@@ -1,32 +1,3 @@
-/* ========================================================================
-   $File: $
-   $Date: $
-   $Revision: $
-   $Creator: Casey Muratori $
-   $Notice: (C) Copyright 2014 by Molly Rocket, Inc. All Rights Reserved. $
-   ======================================================================== */
-
-/*
-  TODO(casey):  THIS IS NOT A FINAL PLATFORM LAYER!!!
-
-  - Saved game locations
-  - Getting a handle to our own executable file
-  - Asset loading path
-  - Threading (launch a thread)
-  - Raw Input (support for multiple keyboards)
-  - Sleep/timeBeginPeriod
-  - ClipCursor() (for multimonitor support)
-  - Fullscreen support
-  - WM_SETCURSOR (control cursor visibility)
-  - QueryCancelAutoplay
-  - WM_ACTIVATEAPP (for when we are not the active application)
-  - Blit speed improvements (BitBlt)
-  - Hardware acceleration (OpenGL or Direct3D or BOTH??)
-  - GetKeyboardLayout (for French keyboards, international WASD support)
-
-  Just a partial list of stuff!!
-*/
-
 #include "platform.h"
 
 #include <windows.h>
