@@ -17,11 +17,8 @@ import se.abjorklund.win32.jna.xaudio2.XAudio2JNI;
 import se.abjorklund.win32.jna.xinput.*;
 
 import javax.sound.sampled.*;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
 
 import static com.sun.jna.platform.win32.WinGDI.BI_RGB;
 import static java.awt.event.KeyEvent.*;
@@ -30,7 +27,7 @@ import static se.abjorklund.win32.jna.xinput.XInput.XUSER_MAX_COUNT;
 import static se.abjorklund.win32.jna.xinput.XInputGamepad.*;
 
 
-public class Win32Platform implements WindowProc {
+public class OldWin32Platform implements WindowProc {
 
     private static final Game game = new Game();
 
@@ -54,7 +51,7 @@ public class Win32Platform implements WindowProc {
     private static final DSoundJNI D_SOUND_JNI = new DSoundJNI();
     private static final XAudio2JNI X_AUDIO_2_JNI = new XAudio2JNI();
 
-    public Win32Platform() {
+    public OldWin32Platform() {
         String osName = System.getProperty("os.name");
         System.out.println("Running on: " + osName);
         String windowClassName = "MyWindowClass";
@@ -74,7 +71,7 @@ public class Win32Platform implements WindowProc {
         windowClass = new WNDCLASSEX();
         windowClass.style = CS_HREDRAW | CS_VREDRAW;
         windowClass.hInstance = instance;
-        windowClass.lpfnWndProc = Win32Platform.this;
+        windowClass.lpfnWndProc = OldWin32Platform.this;
         windowClass.lpszClassName = windowClassName;
     }
 
@@ -215,61 +212,6 @@ public class Win32Platform implements WindowProc {
                         GameOffscreenBuffer gameOffscreenBuffer = getGameOffscreenBuffer();
                         game.gameUpdateAndRender(gameOffscreenBuffer, xOffset, yOffset);
 
-
-                        /*DSoundGlobalSoundOutput globalSoundOutput = D_SOUND_JNI.getGlobalSoundOutput();
-                        int bufferSampleCount = globalSoundOutput.getSecondaryBufferSize() / globalSoundOutput.getBytesPerSample();
-                        short[] samples = new short[bufferSampleCount];
-
-                        *//*for (int i = 0; i < bufferSampleCount; ) {
-                            double t = 2.0 * PI_32 * i / globalSoundOutput.getWavePeriod();
-                            double sineValue = Math.sin(t);
-                            short sampleValue = (short) (sineValue * globalSoundOutput.getToneVolume());
-                            samples[i++] = sampleValue;
-                            samples[i++] = sampleValue;
-                        }*//*
-
-                        for (int sampleIndex = 0; sampleIndex < bufferSampleCount; ) {
-                            if (squareWaveCounter == 0) {
-                                squareWaveCounter = squareWavePeriod;
-                            }
-                            --squareWaveCounter;
-                            short sampleValue = (squareWaveCounter > (squareWavePeriod/2)) ? (short)5000 : -5000;
-                            samples[sampleIndex++] = sampleValue;
-                            samples[sampleIndex++] = sampleValue;
-                        }
-
-
-                        D_SOUND_JNI.playSound(samples);
-
-                        DSoundCursorInfo info = D_SOUND_JNI.getCurrentPosition();
-
-
-                        int pCursor = info.getPlayCursor().intValue();
-                        int wCursor = info.getWriteCursor().intValue();
-
-                        if (info.getHResult().intValue() >= 0) {
-
-                            DWORD byteToLock = new DWORD();
-                            int runningSampleIndex = globalSoundOutput.getRunningSampleIndex();
-                            int bytesPerSample = globalSoundOutput.getBytesPerSample();
-                            int secondaryBufferSize = globalSoundOutput.getSecondaryBufferSize();
-
-                            byteToLock.setValue((runningSampleIndex * bytesPerSample) % secondaryBufferSize);
-                            DWORD bytesToWrite = new DWORD();
-                            if (byteToLock.intValue() == pCursor) {
-                                bytesToWrite.setValue(0);
-                            } else if (byteToLock.intValue() > pCursor) {
-                                bytesToWrite.setValue(secondaryBufferSize - byteToLock.intValue());
-                                bytesToWrite.setValue(bytesToWrite.intValue() + pCursor);
-                            } else {
-                                bytesToWrite.setValue(pCursor - byteToLock.intValue());
-                            }
-
-                            int breakhere = 0;
-                            //win32FillSoundBuffer(byteToLock, bytesToWrite, 0);
-                        }*/
-
-
                         HDC deviceContext = IUSER32.GetDC(window);
                         Win32WindowDimension dimension = getWindowDimension(window);
 
@@ -295,7 +237,6 @@ public class Win32Platform implements WindowProc {
         } else {
             //TODO(anders): logging
         }
-
     }
 
     private GameOffscreenBuffer getGameOffscreenBuffer() {
@@ -429,11 +370,6 @@ public class Win32Platform implements WindowProc {
             System.out.println("error: " + rc);
 
         return rc;
-    }
-
-    public static void main(String[] args) throws IOException, UnsupportedAudioFileException, LineUnavailableException {
-        Win32Platform win32Platform = new Win32Platform();
-        win32Platform.run();
     }
 
 }

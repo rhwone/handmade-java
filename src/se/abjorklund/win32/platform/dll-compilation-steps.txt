@@ -1,0 +1,9 @@
+
+// Compile win32platform.cpp
+cl -MTd -nologo -Gm- -GR- -EHa- -Od -Oi -WX -W4 -wd4201 -wd4100 -wd4189 -wd4456 -DHANDMADE_INTERNAL=1 -DHANDMADE_SLOW=1 -DHANDMADE_WIN32=1 -FC -Z7 -I..\iaca-win64\ win32platform.cpp -LD /link -PDB:win32platform.pdb -incremental:no -opt:ref user32.lib gdi32.lib winmm.lib opengl32.lib
+
+// Compile middleware.cpp
+cl -I..\iaca-win64\ middleware.cpp -LD /link -PDB:middleware.pdb /DEBUG:FULL
+
+// Compile java jni header
+javac -cp ..\..\..\..\jna-lib\jna.jar;..\..\..\..\jna-lib\jna-platform.jar -h . JNI_Platform.java
