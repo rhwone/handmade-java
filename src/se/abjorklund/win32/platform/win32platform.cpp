@@ -37,6 +37,8 @@
 
 #include "win32platform.h"
 
+#include "se_abjorklund_win32_platform_JNIPlatform.h"
+
 // TODO(casey): This is a global for now.
 global_variable bool32 globalRunning;
 global_variable bool32 globalPause;
@@ -44,6 +46,8 @@ global_variable win32_offscreen_buffer globalBackbuffer;
 global_variable LPDIRECTSOUNDBUFFER globalSecondaryBuffer;
 global_variable int64 globalPerfCountFrequency;
 global_variable HINSTANCE globalhinstDLL;
+global_variable JNIEnv *globalJNIEnv;
+global_variable jobject globalThisObj;
 
 // NOTE(casey): XInputGetState
 #define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState)
@@ -1608,8 +1612,10 @@ BOOL DllMain(
 
 extern "C"
 {
-    __declspec(dllexport) void test()
+    __declspec(dllexport) void startPlatformLoop(JNIEnv *env, jobject thisObj)
     {
+        globalJNIEnv = env;
+        globalThisObj = thisObj;
         main(globalhinstDLL, NULL, NULL, NULL);
     }
 }

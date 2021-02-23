@@ -33,9 +33,9 @@
 
 #include "se_abjorklund_win32_platform_JNIPlatform.h"
 
-typedef BOOL test_func();
+typedef BOOL platform_loop(JNIEnv *env, jobject thisObj);
 
-static test_func *testFunc;
+static platform_loop *platformLoop;
 
 JNIEXPORT void JNICALL Java_se_abjorklund_win32_platform_JNIPlatform_start(JNIEnv *env, jobject thisObj)
 {
@@ -47,13 +47,13 @@ JNIEXPORT void JNICALL Java_se_abjorklund_win32_platform_JNIPlatform_start(JNIEn
         printf("Platform DLL loaded successfully\n");
     }
     
-    testFunc = (test_func *)GetProcAddress(platformDLL, "test");
+    platformLoop = (platform_loop *)GetProcAddress(platformDLL, "startPlatformLoop");
 
     printf("If DLL Main\n");
-    if (testFunc)
+    if (platformLoop)
     {
         printf("DLLMain found\n");
-        testFunc();
+        platformLoop(env, thisObj);
     }
 
     else
