@@ -14,16 +14,6 @@ public class Game {
         return renderWeirdGradient();
     }
 
-    public void gameUpdateAndRender(GameOffscreenBuffer buffer, int xOffset, int yOffset) {
-
-        //TODO(anders): Allow sample offsets here for more robust platform options
-        //gameOutputSound(soundBuffer);
-        byte[] gradientBuffer = renderWeirdGradient();
-    }
-
-    private void gameOutputSound(GameSoundOutputBuffer soundBuffer) {
-
-    }
 
     public static byte[] renderWeirdGradient() {
         int width = 1280;
