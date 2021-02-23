@@ -49,6 +49,9 @@ global_variable int64 globalPerfCountFrequency;
 global_variable HINSTANCE globalhinstDLL;
 global_variable JNIEnv *globalJNIEnv;
 global_variable jobject globalThisObjPointer;
+global_variable byte *globalVideoBuffer;
+
+#define VIDEO_BUFFER_SIZE (1280 * 740) * 4
 
 // NOTE(casey): XInputGetState
 #define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState)
@@ -73,103 +76,23 @@ global_variable x_input_set_state *xInputSetState_ = xInputSetStateStub;
 #define DIRECT_SOUND_CREATE(name) HRESULT WINAPI name(LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS, LPUNKNOWN pUnkOuter)
 typedef DIRECT_SOUND_CREATE(direct_sound_create);
 
-internal void
-catStrings(size_t sourceACount, char *sourceA,
-           size_t sourceBCount, char *sourceB,
-           size_t destCount, char *dest)
+
+// Java
+
+internal void fillVideoBuffer()
 {
-    // TODO(casey): Dest bounds checking!
-
-    for (int index = 0;
-         index < sourceACount;
-         ++index)
-    {
-        *dest++ = *sourceA++;
-    }
-
-    for (int index = 0;
-         index < sourceBCount;
-         ++index)
-    {
-        *dest++ = *sourceB++;
-    }
-
-    *dest++ = 0;
-}
-
-// Java calls
-
-//
-
-internal byte *getVideoBuffer()
-{
-    printf("getWeirdGradient called in C\n");
     jclass cls = globalJNIEnv->FindClass("se/abjorklund/game/Game");
-    byte *buffer = {0};
-    if (cls)
-    {
-        printf("cls found\n");
-
-        jmethodID methodId = globalJNIEnv->GetStaticMethodID(cls, "getWeirdGradient", "()[B");
-        jbyteArray videoBytes = (jbyteArray)globalJNIEnv->CallStaticObjectMethod(cls, methodId);
-        jsize lengthOfArray = globalJNIEnv->GetArrayLength(videoBytes);
-        if (videoBytes)
-        {
-            printf("videoBytes not 0\n");
-            printf("videoBytes has size %d\n", lengthOfArray);
-        }
-        jbyte *elements = globalJNIEnv->GetByteArrayElements(videoBytes, NULL);
-        if (elements)
-        {
-            printf("elements not 0\n");
-        } else {
-            printf("elements is 0\n");
-        }
-        buffer = new byte[lengthOfArray];
-        std::memcpy(buffer, elements, lengthOfArray);
-        globalJNIEnv->DeleteLocalRef(cls);
-        globalJNIEnv->ReleaseByteArrayElements(videoBytes, elements, JNI_ABORT);
-    }
-    return buffer;
+    jmethodID methodId = globalJNIEnv->GetStaticMethodID(cls, "getWeirdGradient", "()[B");
+    jbyteArray videoBytes = (jbyteArray)globalJNIEnv->CallStaticObjectMethod(cls, methodId);
+    jsize lengthOfArray = globalJNIEnv->GetArrayLength(videoBytes);
+    jbyte *elements = globalJNIEnv->GetByteArrayElements(videoBytes, NULL);
+    
+    std::memcpy(globalVideoBuffer, elements, lengthOfArray);
+    globalJNIEnv->DeleteLocalRef(cls);
+    globalJNIEnv->ReleaseByteArrayElements(videoBytes, elements, JNI_ABORT);
 }
 
-internal void
-win32GetEXEFileName(Win32State *State)
-{
-    // NOTE(casey): Never use MAX_PATH in code that is user-facing, because it
-    // can be dangerous and lead to bad results.
-    DWORD sizeOfFilename = GetModuleFileNameA(0, State->EXEFileName, sizeof(State->EXEFileName));
-    State->onePastLastEXEFileNameSlash = State->EXEFileName;
-    for (char *scan = State->EXEFileName;
-         *scan;
-         ++scan)
-    {
-        if (*scan == '\\')
-        {
-            State->onePastLastEXEFileNameSlash = scan + 1;
-        }
-    }
-}
-
-internal int
-StringLength(char *String)
-{
-    int Count = 0;
-    while (*String++)
-    {
-        ++Count;
-    }
-    return (Count);
-}
-
-internal void
-Win32BuildEXEPathFileName(Win32State *state, char *fileName,
-                          int destCount, char *dest)
-{
-    catStrings(state->onePastLastEXEFileNameSlash - state->EXEFileName, state->EXEFileName,
-               StringLength(fileName), fileName,
-               destCount, dest);
-}
+// Win32
 
 DEBUG_PLATFORM_FREE_FILE_MEMORY(DEBUGPlatformFreeFileMemory)
 {
@@ -267,54 +190,6 @@ win32GetLastWriteTime(char *Filename)
     }
 
     return (LastWriteTime);
-}
-
-internal Win32GameCode
-win32LoadGameCode(char *sourceDLLName, char *tempDLLName)
-{
-    Win32GameCode Result = {};
-
-    // TODO(casey): Need to get the proper path here!
-    // TODO(casey): Automatic determination of when updates are necessary.
-
-    Result.DLLLastWriteTime = win32GetLastWriteTime(sourceDLLName);
-
-    CopyFile(sourceDLLName, tempDLLName, FALSE);
-
-    Result.gameCodeDLL = LoadLibraryA(tempDLLName);
-    if (Result.gameCodeDLL)
-    {
-        Result.updateAndRender = (game_update_and_render *)
-            GetProcAddress(Result.gameCodeDLL, "GameUpdateAndRender");
-
-        Result.getSoundSamples = (game_get_sound_samples *)
-            GetProcAddress(Result.gameCodeDLL, "GameGetSoundSamples");
-
-        Result.isValid = (Result.updateAndRender &&
-                          Result.getSoundSamples);
-    }
-
-    if (!Result.isValid)
-    {
-        Result.updateAndRender = 0;
-        Result.getSoundSamples = 0;
-    }
-
-    return (Result);
-}
-
-internal void
-win32UnloadGameCode(Win32GameCode *GameCode)
-{
-    if (GameCode->gameCodeDLL)
-    {
-        FreeLibrary(GameCode->gameCodeDLL);
-        GameCode->gameCodeDLL = 0;
-    }
-
-    GameCode->isValid = false;
-    GameCode->updateAndRender = 0;
-    GameCode->getSoundSamples = 0;
 }
 
 internal void
@@ -687,105 +562,6 @@ win32ProcessXInputStickValue(SHORT Value, SHORT DeadZoneThreshold)
 }
 
 internal void
-win32GetInputFileLocation(Win32State *State, bool32 InputStream,
-                          int SlotIndex, int DestCount, char *Dest)
-{
-    char Temp[64];
-    wsprintf(Temp, "loop_edit_%d_%s.hmi", SlotIndex, InputStream ? "input" : "state");
-    Win32BuildEXEPathFileName(State, Temp, DestCount, Dest);
-}
-
-internal Win32ReplayBuffer *
-win32GetReplayBuffer(Win32State *State, int unsigned Index)
-{
-    Assert(Index < ArrayCount(State->replayBuffers));
-    Win32ReplayBuffer *Result = &State->replayBuffers[Index];
-    return (Result);
-}
-
-internal void
-win32BeginRecordingInput(Win32State *State, int inputRecordingIndex)
-{
-    Win32ReplayBuffer *ReplayBuffer = win32GetReplayBuffer(State, inputRecordingIndex);
-    if (ReplayBuffer->memoryBlock)
-    {
-        State->inputRecordingIndex = inputRecordingIndex;
-
-        char fileName[WIN32_STATE_FILE_NAME_COUNT];
-        win32GetInputFileLocation(State, true, inputRecordingIndex, sizeof(fileName), fileName);
-        State->recordingHandle = CreateFileA(fileName, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, 0, 0);
-
-#if 0
-        LARGE_INTEGER FilePosition;
-        FilePosition.QuadPart = State->TotalSize;
-        SetFilePointerEx(State->RecordingHandle, FilePosition, 0, FILE_BEGIN);
-#endif
-
-        CopyMemory(ReplayBuffer->memoryBlock, State->gameMemoryBlock, State->totalSize);
-    }
-}
-
-internal void
-win32EndRecordingInput(Win32State *State)
-{
-    CloseHandle(State->recordingHandle);
-    State->inputRecordingIndex = 0;
-}
-
-internal void
-win32BeginInputPlayBack(Win32State *State, int inputPlayingIndex)
-{
-    Win32ReplayBuffer *ReplayBuffer = win32GetReplayBuffer(State, inputPlayingIndex);
-    if (ReplayBuffer->memoryBlock)
-    {
-        State->inputPlayingIndex = inputPlayingIndex;
-
-        char fileName[WIN32_STATE_FILE_NAME_COUNT];
-        win32GetInputFileLocation(State, true, inputPlayingIndex, sizeof(fileName), fileName);
-        State->playbackHandle = CreateFileA(fileName, GENERIC_READ, 0, 0, OPEN_EXISTING, 0, 0);
-
-#if 0
-        LARGE_INTEGER FilePosition;
-        FilePosition.QuadPart = State->TotalSize;
-        SetFilePointerEx(State->PlaybackHandle, FilePosition, 0, FILE_BEGIN);
-#endif
-
-        CopyMemory(State->gameMemoryBlock, ReplayBuffer->memoryBlock, State->totalSize);
-    }
-}
-
-internal void
-win32EndInputPlayBack(Win32State *State)
-{
-    CloseHandle(State->playbackHandle);
-    State->inputPlayingIndex = 0;
-}
-
-internal void
-win32RecordInput(Win32State *State, GameInput *NewInput)
-{
-    DWORD BytesWritten;
-    WriteFile(State->recordingHandle, NewInput, sizeof(*NewInput), &BytesWritten, 0);
-}
-
-internal void
-win32PlayBackInput(Win32State *State, GameInput *NewInput)
-{
-    DWORD BytesRead = 0;
-    if (ReadFile(State->playbackHandle, NewInput, sizeof(*NewInput), &BytesRead, 0))
-    {
-        if (BytesRead == 0)
-        {
-            // NOTE(casey): We've hit the end of the stream, go back to the beginning
-            int PlayingIndex = State->inputPlayingIndex;
-            win32EndInputPlayBack(State);
-            win32BeginInputPlayBack(State, PlayingIndex);
-            ReadFile(State->playbackHandle, NewInput, sizeof(*NewInput), &BytesRead, 0);
-        }
-    }
-}
-
-internal void
 win32ProcessPendingMessages(Win32State *state, GameControllerInput *keyboardController)
 {
     MSG message;
@@ -867,28 +643,6 @@ win32ProcessPendingMessages(Win32State *state, GameControllerInput *keyboardCont
                     if (isDown)
                     {
                         globalPause = !globalPause;
-                    }
-                }
-                else if (vKCode == 'L')
-                {
-                    if (isDown)
-                    {
-                        if (state->inputPlayingIndex == 0)
-                        {
-                            if (state->inputRecordingIndex == 0)
-                            {
-                                win32BeginRecordingInput(state, 1);
-                            }
-                            else
-                            {
-                                win32EndRecordingInput(state);
-                                win32BeginInputPlayBack(state, 1);
-                            }
-                        }
-                        else
-                        {
-                            win32EndInputPlayBack(state);
-                        }
                     }
                 }
 #endif
@@ -1042,16 +796,6 @@ int main(HINSTANCE instance,
     QueryPerformanceFrequency(&perfCountFrequencyResult);
     globalPerfCountFrequency = perfCountFrequencyResult.QuadPart;
 
-    win32GetEXEFileName(&win32State);
-
-    char sourceGameCodeDLLFullPath[WIN32_STATE_FILE_NAME_COUNT];
-    Win32BuildEXEPathFileName(&win32State, "handmade.dll",
-                              sizeof(sourceGameCodeDLLFullPath), sourceGameCodeDLLFullPath);
-
-    char tempGameCodeDLLFullPath[WIN32_STATE_FILE_NAME_COUNT];
-    Win32BuildEXEPathFileName(&win32State, "handmade_temp.dll",
-                              sizeof(tempGameCodeDLLFullPath), tempGameCodeDLLFullPath);
-
     // NOTE(casey): Set the Windows scheduler granularity to 1ms
     // so that our Sleep() can be more granular.
     UINT desiredSchedulerMS = 1;
@@ -1158,40 +902,6 @@ int main(HINSTANCE instance,
             gameMemory.transientStorage = ((uint8 *)gameMemory.permanentStorage +
                                            gameMemory.permanentStorageSize);
 
-            for (int replayIndex = 0;
-                 replayIndex < ArrayCount(win32State.replayBuffers);
-                 ++replayIndex)
-            {
-                Win32ReplayBuffer *replayBuffer = &win32State.replayBuffers[replayIndex];
-
-                // TODO(casey): Recording system still seems to take too long
-                // on record start - find out what Windows is doing and if
-                // we can speed up / defer some of that processing.
-
-                win32GetInputFileLocation(&win32State, false, replayIndex,
-                                          sizeof(replayBuffer->fileName), replayBuffer->fileName);
-
-                replayBuffer->fileHandle =
-                    CreateFileA(replayBuffer->fileName,
-                                GENERIC_WRITE | GENERIC_READ, 0, 0, CREATE_ALWAYS, 0, 0);
-
-                LARGE_INTEGER maxSize;
-                maxSize.QuadPart = win32State.totalSize;
-                replayBuffer->memoryMap = CreateFileMapping(
-                    replayBuffer->fileHandle, 0, PAGE_READWRITE,
-                    maxSize.HighPart, maxSize.LowPart, 0);
-
-                replayBuffer->memoryBlock = MapViewOfFile(
-                    replayBuffer->memoryMap, FILE_MAP_ALL_ACCESS, 0, 0, win32State.totalSize);
-                if (replayBuffer->memoryBlock)
-                {
-                }
-                else
-                {
-                    // TODO(casey): Diagnostic
-                }
-            }
-
             if (samples && gameMemory.permanentStorage && gameMemory.transientStorage)
             {
                 GameInput input[2] = {};
@@ -1208,22 +918,11 @@ int main(HINSTANCE instance,
                 real32 audioLatencySeconds = 0;
                 bool32 soundIsValid = false;
 
-                Win32GameCode game = win32LoadGameCode(sourceGameCodeDLLFullPath,
-                                                       tempGameCodeDLLFullPath);
                 uint32 loadCounter = 0;
 
                 uint64 lastCycleCount = __rdtsc();
                 while (globalRunning)
                 {
-                    FILETIME newDLLWriteTime = win32GetLastWriteTime(sourceGameCodeDLLFullPath);
-                    if (CompareFileTime(&newDLLWriteTime, &game.DLLLastWriteTime) != 0)
-                    {
-                        win32UnloadGameCode(&game);
-                        game = win32LoadGameCode(sourceGameCodeDLLFullPath,
-                                                 tempGameCodeDLLFullPath);
-                        loadCounter = 0;
-                    }
-
                     // TODO(casey): Zeroing macro
                     // TODO(casey): We can't zero everything because the up/down state will
                     // be wrong!!!
@@ -1374,32 +1073,8 @@ int main(HINSTANCE instance,
                                 newController->isConnected = false;
                             }
                         }
-
-                        ThreadContext thread = {};
-
-                        GameOffscreenBuffer buffer = {};
-                        buffer.memory = globalBackbuffer.memory;
-                        buffer.width = globalBackbuffer.Width;
-                        buffer.height = globalBackbuffer.Height;
-                        buffer.pitch = globalBackbuffer.Pitch;
-                        buffer.bytesPerPixel = globalBackbuffer.bytesPerPixel;
-
-                        if (win32State.inputRecordingIndex)
-                        {
-                            win32RecordInput(&win32State, newInput);
-                        }
-
-                        if (win32State.inputPlayingIndex)
-                        {
-                            win32PlayBackInput(&win32State, newInput);
-                        }
-                        if (game.updateAndRender)
-                        {
-
-                            //game.updateAndRender(&thread, &gameMemory, newInput, &buffer);
-                        }
-
-                        globalBackbuffer.memory = (void *)getVideoBuffer();
+                        fillVideoBuffer();
+                        globalBackbuffer.memory = (void*)globalVideoBuffer;
 #if 0
                         LARGE_INTEGER audioWallClock = win32GetWallClock();
                         real32 fromBeginToAudioSeconds = win32GetSecondsElapsed(flipWallClock, audioWallClock);
@@ -1641,7 +1316,6 @@ BOOL DllMain(
     DWORD fdwReason,
     LPVOID lpvReserved)
 {
-    printf("DLLMain called with reason %d\n", fdwReason);
     if (fdwReason == 0)
     {
         globalhinstDLL = hinstDLL;
@@ -1653,6 +1327,8 @@ extern "C"
 {
     __declspec(dllexport) void startPlatformLoop(JNIEnv *env, jobject thisObj)
     {
+        globalVideoBuffer = {0};
+        globalVideoBuffer = new byte[VIDEO_BUFFER_SIZE];
         globalJNIEnv = env;
         globalThisObjPointer = thisObj;
         main(globalhinstDLL, NULL, NULL, NULL);
