@@ -10,7 +10,12 @@ public class Game {
         JNI_PLATFORM.start();
     }
 
+    public static void testCallback() {
+        System.out.println("Java called from C");
+    }
+
     public static byte[] getWeirdGradient() {
+        System.out.println("getWeirdGradient called from C");
         return renderWeirdGradient();
     }
 

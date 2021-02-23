@@ -34,6 +34,7 @@
 #include <malloc.h>
 #include <xinput.h>
 #include <dsound.h>
+#include <cstring>
 
 #include "win32platform.h"
 
@@ -47,7 +48,7 @@ global_variable LPDIRECTSOUNDBUFFER globalSecondaryBuffer;
 global_variable int64 globalPerfCountFrequency;
 global_variable HINSTANCE globalhinstDLL;
 global_variable JNIEnv *globalJNIEnv;
-global_variable jobject globalThisObj;
+global_variable jobject globalThisObjPointer;
 
 // NOTE(casey): XInputGetState
 #define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState)
@@ -94,6 +95,42 @@ catStrings(size_t sourceACount, char *sourceA,
     }
 
     *dest++ = 0;
+}
+
+// Java calls
+
+//
+
+internal byte *getVideoBuffer()
+{
+    printf("getWeirdGradient called in C\n");
+    jclass cls = globalJNIEnv->FindClass("se/abjorklund/game/Game");
+    byte *buffer = {0};
+    if (cls)
+    {
+        printf("cls found\n");
+
+        jmethodID methodId = globalJNIEnv->GetStaticMethodID(cls, "getWeirdGradient", "()[B");
+        jbyteArray videoBytes = (jbyteArray)globalJNIEnv->CallStaticObjectMethod(cls, methodId);
+        jsize lengthOfArray = globalJNIEnv->GetArrayLength(videoBytes);
+        if (videoBytes)
+        {
+            printf("videoBytes not 0\n");
+            printf("videoBytes has size %d\n", lengthOfArray);
+        }
+        jbyte *elements = globalJNIEnv->GetByteArrayElements(videoBytes, NULL);
+        if (elements)
+        {
+            printf("elements not 0\n");
+        } else {
+            printf("elements is 0\n");
+        }
+        buffer = new byte[lengthOfArray];
+        std::memcpy(buffer, elements, lengthOfArray);
+        globalJNIEnv->DeleteLocalRef(cls);
+        globalJNIEnv->ReleaseByteArrayElements(videoBytes, elements, JNI_ABORT);
+    }
+    return buffer;
 }
 
 internal void
@@ -1361,6 +1398,8 @@ int main(HINSTANCE instance,
 
                             //game.updateAndRender(&thread, &gameMemory, newInput, &buffer);
                         }
+
+                        globalBackbuffer.memory = (void *)getVideoBuffer();
 #if 0
                         LARGE_INTEGER audioWallClock = win32GetWallClock();
                         real32 fromBeginToAudioSeconds = win32GetSecondsElapsed(flipWallClock, audioWallClock);
@@ -1615,7 +1654,7 @@ extern "C"
     __declspec(dllexport) void startPlatformLoop(JNIEnv *env, jobject thisObj)
     {
         globalJNIEnv = env;
-        globalThisObj = thisObj;
+        globalThisObjPointer = thisObj;
         main(globalhinstDLL, NULL, NULL, NULL);
     }
 }
