@@ -52,15 +52,15 @@ typedef DIRECT_SOUND_CREATE(direct_sound_create);
 
 internal void fillVideoBuffer()
 {
-    jclass cls = globalJNIEnv->FindClass("se/abjorklund/game/Game");
-    jmethodID methodId = globalJNIEnv->GetStaticMethodID(cls, "getWeirdGradient", "()[B");
-    jbyteArray videoBytes = (jbyteArray)globalJNIEnv->CallStaticObjectMethod(cls, methodId);
-    jsize lengthOfArray = globalJNIEnv->GetArrayLength(videoBytes);
-    jbyte *elements = globalJNIEnv->GetByteArrayElements(videoBytes, NULL);
+    jclass gameClass = globalJNIEnv->FindClass("se/abjorklund/game/Game");
+    jmethodID getVideoBufferId = globalJNIEnv->GetStaticMethodID(gameClass, "win32platform_getVideoBuffer", "()[B");
+    jbyteArray javaVideoBuffer = (jbyteArray)globalJNIEnv->CallStaticObjectMethod(gameClass, getVideoBufferId);
+    jsize lengthOfArray = globalJNIEnv->GetArrayLength(javaVideoBuffer);
+    jbyte *elements = globalJNIEnv->GetByteArrayElements(javaVideoBuffer, NULL);
     
     std::memcpy(globalVideoBuffer, elements, lengthOfArray);
-    globalJNIEnv->DeleteLocalRef(cls);
-    globalJNIEnv->ReleaseByteArrayElements(videoBytes, elements, JNI_ABORT);
+    globalJNIEnv->DeleteLocalRef(gameClass);
+    globalJNIEnv->ReleaseByteArrayElements(javaVideoBuffer, elements, JNI_ABORT);
 }
 
 // Win32

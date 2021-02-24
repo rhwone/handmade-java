@@ -2,6 +2,12 @@ package se.abjorklund.game;
 
 import se.abjorklund.win32.JNIPlatform;
 
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.UnsupportedAudioFileException;
+import java.io.File;
+import java.io.IOException;
+
 public class Game {
     private static final JNIPlatform JNI_PLATFORM = new JNIPlatform();
 
@@ -10,8 +16,32 @@ public class Game {
         JNI_PLATFORM.start();
     }
 
-    public static byte[] getWeirdGradient() {
+    public static byte[] win32platform_getVideoBuffer() {
         return renderWeirdGradient();
+    }
+
+    public static byte[] win32platform_getSoundBuffer() {
+        return getSimpleAudioBuffer();
+    }
+
+    private static byte[] getSimpleAudioBuffer() {
+        String currentDir = System.getProperty("user.dir");
+        System.out.println("Current dir using System:" + currentDir);
+        File audioFile = new File("src/se/abjorklund/win32/Ring09.wav");
+
+        AudioInputStream audioInputStream = null;
+        byte[] buffer = new byte[0];
+        try {
+            audioInputStream = AudioSystem
+                    .getAudioInputStream(audioFile.getAbsoluteFile());
+            int available = audioInputStream.available();
+            buffer = new byte[available];
+
+            audioInputStream.read(buffer);
+        } catch (UnsupportedAudioFileException | IOException e) {
+            e.printStackTrace();
+        }
+        return buffer;
     }
 
 
