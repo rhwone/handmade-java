@@ -170,13 +170,11 @@ struct GameInput
     int32 mouseX, mouseY, mouseZ;
 
     // TODO(casey): Insert clock values here.    
-    GameControllerInput controllers[5];
+    GameControllerInput controller;
 };
-inline GameControllerInput *GetController(GameInput *input, int unsigned controllerIndex)
+inline GameControllerInput *GetController(GameInput *input)
 {
-    Assert(controllerIndex < ArrayCount(input->controllers));
-    
-    GameControllerInput *result = &input->controllers[controllerIndex];
+    GameControllerInput *result = &input->controller;
     return(result);
 }
 

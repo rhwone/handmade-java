@@ -47,17 +47,90 @@ global_variable x_input_set_state *xInputSetState_ = xInputSetStateStub;
 #define DIRECT_SOUND_CREATE(name) HRESULT WINAPI name(LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS, LPUNKNOWN pUnkOuter)
 typedef DIRECT_SOUND_CREATE(direct_sound_create);
 
-
 // Java
 
-internal void fillVideoBuffer()
+internal void gameUpdateAndRender(GameInput *newInput)
 {
-    jclass gameClass = globalJNIEnv->FindClass("se/abjorklund/game/Game");
-    jmethodID getVideoBufferId = globalJNIEnv->GetStaticMethodID(gameClass, "win32platform_getVideoBuffer", "()[B");
-    jbyteArray javaVideoBuffer = (jbyteArray)globalJNIEnv->CallStaticObjectMethod(gameClass, getVideoBufferId);
+
+    int moveUpHalfTransitionCount = newInput->controller.moveUp.halfTransitionCount;
+    bool32 moveUpEndedDown = newInput->controller.moveUp.endedDown;
+
+    int moveDownHalfTransitionCount = newInput->controller.moveDown.halfTransitionCount;
+    bool32 moveDownEndedDown = newInput->controller.moveDown.endedDown;
+
+    int moveLeftHalfTransitionCount = newInput->controller.moveLeft.halfTransitionCount;
+    bool32 moveLeftEndedDown = newInput->controller.moveLeft.endedDown;
+
+    int moveRightHalfTransitionCount = newInput->controller.moveRight.halfTransitionCount;
+    bool32 moveRightEndedDown = newInput->controller.moveRight.endedDown;
+
+    int actionUpHalfTransitionCount = newInput->controller.actionUp.halfTransitionCount;
+    bool32 actionUpEndedDown = newInput->controller.actionUp.endedDown;
+
+    int actionDownHalfTransitionCount = newInput->controller.actionDown.halfTransitionCount;
+    bool32 actionDownEndedDown = newInput->controller.actionDown.endedDown;
+
+    int actionLeftHalfTransitionCount = newInput->controller.actionLeft.halfTransitionCount;
+    bool32 actionLeftEndedDown = newInput->controller.actionLeft.endedDown;
+
+    int actionRightHalfTransitionCount = newInput->controller.actionRight.halfTransitionCount;
+    bool32 actionRightEndedDown = newInput->controller.actionRight.endedDown;
+
+    int leftShoulderHalfTransitionCount = newInput->controller.leftShoulder.halfTransitionCount;
+    bool32 leftShoulderEndedDown = newInput->controller.leftShoulder.endedDown;
+
+    int rightShoulderHalfTransitionCount = newInput->controller.rightShoulder.halfTransitionCount;
+    bool32 rightShoulderEndedDown = newInput->controller.rightShoulder.endedDown;
+
+    int backHalfTransitionCount = newInput->controller.back.halfTransitionCount;
+    bool32 backEndedDown = newInput->controller.back.endedDown;
+
+    int startHalfTransitionCount = newInput->controller.start.halfTransitionCount;
+    bool32 startEndedDown = newInput->controller.start.endedDown;
+
+    bool32 isConnected = newInput->controller.isConnected;
+    bool32 isAnalog = newInput->controller.isAnalog;
+    real32 stickAverageX = newInput->controller.stickAverageX;
+    real32 stickAverageY = newInput->controller.stickAverageY;
+
+    jclass gameClass = globalJNIEnv->FindClass("se/abjorklund/game/GamePlatform");
+    jmethodID getVideoBufferId = globalJNIEnv->GetStaticMethodID(gameClass, "win32platform_gameUpdateAndRender", "(IZIZIZIZIZIZIZIZIZIZIZIZZZFF)[B");
+
+    jbyteArray javaVideoBuffer = (jbyteArray)globalJNIEnv->CallStaticObjectMethod(
+        gameClass,
+        getVideoBufferId,
+        moveUpHalfTransitionCount,
+        moveUpEndedDown,
+        moveDownHalfTransitionCount,
+        moveDownEndedDown,
+        moveLeftHalfTransitionCount,
+        moveLeftEndedDown,
+        moveRightHalfTransitionCount,
+        moveRightEndedDown,
+        actionUpHalfTransitionCount,
+        actionUpEndedDown,
+        actionDownHalfTransitionCount,
+        actionDownEndedDown,
+        actionLeftHalfTransitionCount,
+        actionLeftEndedDown,
+        actionRightHalfTransitionCount,
+        actionRightEndedDown,
+        leftShoulderHalfTransitionCount,
+        leftShoulderEndedDown,
+        rightShoulderHalfTransitionCount,
+        rightShoulderEndedDown,
+        backHalfTransitionCount,
+        backEndedDown,
+        startHalfTransitionCount,
+        startEndedDown,
+        isConnected,
+        isAnalog,
+        stickAverageX,
+        stickAverageY);
+
     jsize lengthOfArray = globalJNIEnv->GetArrayLength(javaVideoBuffer);
     jbyte *elements = globalJNIEnv->GetByteArrayElements(javaVideoBuffer, NULL);
-    
+
     std::memcpy(globalVideoBuffer, elements, lengthOfArray);
     globalJNIEnv->DeleteLocalRef(gameClass);
     globalJNIEnv->ReleaseByteArrayElements(javaVideoBuffer, elements, JNI_ABORT);
@@ -897,8 +970,8 @@ int main(HINSTANCE instance,
                     // TODO(casey): Zeroing macro
                     // TODO(casey): We can't zero everything because the up/down state will
                     // be wrong!!!
-                    GameControllerInput *oldKeyboardController = GetController(oldInput, 0);
-                    GameControllerInput *newKeyboardController = GetController(newInput, 0);
+                    GameControllerInput *oldKeyboardController = GetController(oldInput);
+                    GameControllerInput *newKeyboardController = GetController(newInput);
                     *newKeyboardController = {};
                     newKeyboardController->isConnected = true;
                     for (int buttonIndex = 0;
@@ -933,119 +1006,109 @@ int main(HINSTANCE instance,
                         // TODO(casey): Need to not poll disconnected controllers to avoid
                         // xinput frame rate hit on older libraries...
                         // TODO(casey): Should we poll this more frequently
-                        DWORD maxControllerCount = XUSER_MAX_COUNT;
-                        if (maxControllerCount > (ArrayCount(newInput->controllers) - 1))
+
+                        GameControllerInput *oldController = GetController(oldInput);
+                        GameControllerInput *newController = GetController(newInput);
+
+                        XINPUT_STATE controllerState;
+                        if (XInputGetState(0, &controllerState) == ERROR_SUCCESS)
                         {
-                            maxControllerCount = (ArrayCount(newInput->controllers) - 1);
+                            newController->isConnected = true;
+                            newController->isAnalog = oldController->isAnalog;
+
+                            // NOTE(casey): This controller is plugged in
+                            // TODO(casey): See if ControllerState.dwPacketNumber increments too rapidly
+                            XINPUT_GAMEPAD *pad = &controllerState.Gamepad;
+
+                            // TODO(casey): This is a square deadzone, check XInput to
+                            // verify that the deadzone is "round" and show how to do
+                            // round deadzone processing.
+                            newController->stickAverageX = win32ProcessXInputStickValue(
+                                pad->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+                            newController->stickAverageY = win32ProcessXInputStickValue(
+                                pad->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
+                            if ((newController->stickAverageX != 0.0f) ||
+                                (newController->stickAverageY != 0.0f))
+                            {
+                                newController->isAnalog = true;
+                            }
+
+                            if (pad->wButtons & XINPUT_GAMEPAD_DPAD_UP)
+                            {
+                                newController->stickAverageY = 1.0f;
+                                newController->isAnalog = false;
+                            }
+
+                            if (pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN)
+                            {
+                                newController->stickAverageY = -1.0f;
+                                newController->isAnalog = false;
+                            }
+
+                            if (pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT)
+                            {
+                                newController->stickAverageX = -1.0f;
+                                newController->isAnalog = false;
+                            }
+
+                            if (pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT)
+                            {
+                                newController->stickAverageX = 1.0f;
+                                newController->isAnalog = false;
+                            }
+
+                            real32 threshold = 0.5f;
+                            win32ProcessXInputDigitalButton(
+                                (newController->stickAverageX < -threshold) ? 1 : 0,
+                                &oldController->moveLeft, 1,
+                                &newController->moveLeft);
+                            win32ProcessXInputDigitalButton(
+                                (newController->stickAverageX > threshold) ? 1 : 0,
+                                &oldController->moveRight, 1,
+                                &newController->moveRight);
+                            win32ProcessXInputDigitalButton(
+                                (newController->stickAverageY < -threshold) ? 1 : 0,
+                                &oldController->moveDown, 1,
+                                &newController->moveDown);
+                            win32ProcessXInputDigitalButton(
+                                (newController->stickAverageY > threshold) ? 1 : 0,
+                                &oldController->moveUp, 1,
+                                &newController->moveUp);
+
+                            win32ProcessXInputDigitalButton(pad->wButtons,
+                                                            &oldController->actionDown, XINPUT_GAMEPAD_A,
+                                                            &newController->actionDown);
+                            win32ProcessXInputDigitalButton(pad->wButtons,
+                                                            &oldController->actionRight, XINPUT_GAMEPAD_B,
+                                                            &newController->actionRight);
+                            win32ProcessXInputDigitalButton(pad->wButtons,
+                                                            &oldController->actionLeft, XINPUT_GAMEPAD_X,
+                                                            &newController->actionLeft);
+                            win32ProcessXInputDigitalButton(pad->wButtons,
+                                                            &oldController->actionUp, XINPUT_GAMEPAD_Y,
+                                                            &newController->actionUp);
+                            win32ProcessXInputDigitalButton(pad->wButtons,
+                                                            &oldController->leftShoulder, XINPUT_GAMEPAD_LEFT_SHOULDER,
+                                                            &newController->leftShoulder);
+                            win32ProcessXInputDigitalButton(pad->wButtons,
+                                                            &oldController->rightShoulder, XINPUT_GAMEPAD_RIGHT_SHOULDER,
+                                                            &newController->rightShoulder);
+
+                            win32ProcessXInputDigitalButton(pad->wButtons,
+                                                            &oldController->start, XINPUT_GAMEPAD_START,
+                                                            &newController->start);
+                            win32ProcessXInputDigitalButton(pad->wButtons,
+                                                            &oldController->back, XINPUT_GAMEPAD_BACK,
+                                                            &newController->back);
+                        }
+                        else
+                        {
+                            // NOTE(casey): The controller is not available
+                            newController->isConnected = false;
                         }
 
-                        for (DWORD controllerIndex = 0;
-                             controllerIndex < maxControllerCount;
-                             ++controllerIndex)
-                        {
-                            DWORD ourControllerIndex = controllerIndex + 1;
-                            GameControllerInput *oldController = GetController(oldInput, ourControllerIndex);
-                            GameControllerInput *newController = GetController(newInput, ourControllerIndex);
-
-                            XINPUT_STATE controllerState;
-                            if (XInputGetState(controllerIndex, &controllerState) == ERROR_SUCCESS)
-                            {
-                                newController->isConnected = true;
-                                newController->isAnalog = oldController->isAnalog;
-
-                                // NOTE(casey): This controller is plugged in
-                                // TODO(casey): See if ControllerState.dwPacketNumber increments too rapidly
-                                XINPUT_GAMEPAD *pad = &controllerState.Gamepad;
-
-                                // TODO(casey): This is a square deadzone, check XInput to
-                                // verify that the deadzone is "round" and show how to do
-                                // round deadzone processing.
-                                newController->stickAverageX = win32ProcessXInputStickValue(
-                                    pad->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
-                                newController->stickAverageY = win32ProcessXInputStickValue(
-                                    pad->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
-                                if ((newController->stickAverageX != 0.0f) ||
-                                    (newController->stickAverageY != 0.0f))
-                                {
-                                    newController->isAnalog = true;
-                                }
-
-                                if (pad->wButtons & XINPUT_GAMEPAD_DPAD_UP)
-                                {
-                                    newController->stickAverageY = 1.0f;
-                                    newController->isAnalog = false;
-                                }
-
-                                if (pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN)
-                                {
-                                    newController->stickAverageY = -1.0f;
-                                    newController->isAnalog = false;
-                                }
-
-                                if (pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT)
-                                {
-                                    newController->stickAverageX = -1.0f;
-                                    newController->isAnalog = false;
-                                }
-
-                                if (pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT)
-                                {
-                                    newController->stickAverageX = 1.0f;
-                                    newController->isAnalog = false;
-                                }
-
-                                real32 threshold = 0.5f;
-                                win32ProcessXInputDigitalButton(
-                                    (newController->stickAverageX < -threshold) ? 1 : 0,
-                                    &oldController->moveLeft, 1,
-                                    &newController->moveLeft);
-                                win32ProcessXInputDigitalButton(
-                                    (newController->stickAverageX > threshold) ? 1 : 0,
-                                    &oldController->moveRight, 1,
-                                    &newController->moveRight);
-                                win32ProcessXInputDigitalButton(
-                                    (newController->stickAverageY < -threshold) ? 1 : 0,
-                                    &oldController->moveDown, 1,
-                                    &newController->moveDown);
-                                win32ProcessXInputDigitalButton(
-                                    (newController->stickAverageY > threshold) ? 1 : 0,
-                                    &oldController->moveUp, 1,
-                                    &newController->moveUp);
-
-                                win32ProcessXInputDigitalButton(pad->wButtons,
-                                                                &oldController->actionDown, XINPUT_GAMEPAD_A,
-                                                                &newController->actionDown);
-                                win32ProcessXInputDigitalButton(pad->wButtons,
-                                                                &oldController->actionRight, XINPUT_GAMEPAD_B,
-                                                                &newController->actionRight);
-                                win32ProcessXInputDigitalButton(pad->wButtons,
-                                                                &oldController->actionLeft, XINPUT_GAMEPAD_X,
-                                                                &newController->actionLeft);
-                                win32ProcessXInputDigitalButton(pad->wButtons,
-                                                                &oldController->actionUp, XINPUT_GAMEPAD_Y,
-                                                                &newController->actionUp);
-                                win32ProcessXInputDigitalButton(pad->wButtons,
-                                                                &oldController->leftShoulder, XINPUT_GAMEPAD_LEFT_SHOULDER,
-                                                                &newController->leftShoulder);
-                                win32ProcessXInputDigitalButton(pad->wButtons,
-                                                                &oldController->rightShoulder, XINPUT_GAMEPAD_RIGHT_SHOULDER,
-                                                                &newController->rightShoulder);
-
-                                win32ProcessXInputDigitalButton(pad->wButtons,
-                                                                &oldController->start, XINPUT_GAMEPAD_START,
-                                                                &newController->start);
-                                win32ProcessXInputDigitalButton(pad->wButtons,
-                                                                &oldController->back, XINPUT_GAMEPAD_BACK,
-                                                                &newController->back);
-                            }
-                            else
-                            {
-                                // NOTE(casey): The controller is not available
-                                newController->isConnected = false;
-                            }
-                        }
-                        fillVideoBuffer();
-                        globalBackbuffer.memory = (void*)globalVideoBuffer;
+                        gameUpdateAndRender(newInput);
+                        globalBackbuffer.memory = (void *)globalVideoBuffer;
 #if 0
                         LARGE_INTEGER audioWallClock = win32GetWallClock();
                         real32 fromBeginToAudioSeconds = win32GetSecondsElapsed(flipWallClock, audioWallClock);
