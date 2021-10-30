@@ -32,6 +32,8 @@ struct Win32SoundOutput
     DWORD secondaryBufferSize;
     DWORD safetyBytes;
     real32 tSine;
+    int latencySampleCount;
+    int toneHz;
     // TODO(casey): Should running sample index be in bytes as well
     // TODO(casey): Math gets simpler if we add a "bytes per second" field?
 };

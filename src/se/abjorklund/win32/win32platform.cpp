@@ -21,6 +21,7 @@ global_variable HINSTANCE globalhinstDLL;
 global_variable JNIEnv *globalJNIEnv;
 global_variable jobject globalThisObjPointer;
 global_variable byte *globalVideoBuffer;
+global_variable int16 *samples;
 
 #define VIDEO_BUFFER_SIZE (1280 * 740) * 4
 
@@ -48,6 +49,20 @@ global_variable x_input_set_state *xInputSetState_ = xInputSetStateStub;
 typedef DIRECT_SOUND_CREATE(direct_sound_create);
 
 // Java
+
+internal void gameGetSoundSamples(int sampleCount, int samplesPerSecond, int toneHz)
+{   
+    jclass gameClass = globalJNIEnv->FindClass("se/abjorklund/game/GamePlatform");
+    jmethodID getSoundSamplesId = globalJNIEnv->GetStaticMethodID(gameClass, "win32platform_getSoundSamples", "(III)[S");
+    jshortArray javaSamples = (jshortArray)globalJNIEnv->CallStaticObjectMethod(gameClass, getSoundSamplesId, sampleCount, samplesPerSecond, toneHz);
+
+    jsize lengthOfArray = globalJNIEnv->GetArrayLength(javaSamples);
+    jshort *elements = globalJNIEnv->GetShortArrayElements(javaSamples, NULL);
+
+    std::memcpy(samples, elements, lengthOfArray);
+    globalJNIEnv->DeleteLocalRef(gameClass);
+    globalJNIEnv->ReleaseShortArrayElements(javaSamples, elements, JNI_ABORT);
+}
 
 internal void gameUpdateAndRender(GameInput *newInput)
 {
@@ -523,7 +538,6 @@ win32ClearBuffer(Win32SoundOutput *SoundOutput)
     }
 }
 
-#if 0
 internal void
 win32FillSoundBuffer(Win32SoundOutput *SoundOutput, DWORD ByteToLock, DWORD BytesToWrite,
                      GameSoundOutputBuffer *SourceBuffer)
@@ -567,7 +581,6 @@ win32FillSoundBuffer(Win32SoundOutput *SoundOutput, DWORD ByteToLock, DWORD Byte
         globalSecondaryBuffer->Unlock(Region1, Region1Size, Region2, Region2Size);
     }
 }
-#endif
 
 internal void
 win32ProcessKeyboardMessage(GameButtonState *NewState, bool32 IsDown)
@@ -893,9 +906,11 @@ int main(HINSTANCE instance,
             soundOutput.samplesPerSecond = 48000;
             soundOutput.bytesPerSample = sizeof(int16) * 2;
             soundOutput.secondaryBufferSize = soundOutput.samplesPerSecond * soundOutput.bytesPerSample;
+            soundOutput.latencySampleCount = soundOutput.samplesPerSecond / 5;
+            soundOutput.toneHz = 256;
             // TODO(casey): Actually compute this variance and see
             // what the lowest reasonable value is.
-            soundOutput.safetyBytes = (int)(((real32)soundOutput.samplesPerSecond * (real32)soundOutput.bytesPerSample / gameUpdateHz) / 3.0f);
+            soundOutput.safetyBytes = (int)(((real32)soundOutput.samplesPerSecond * (real32)soundOutput.bytesPerSample / gameUpdateHz) / 2.0f);
             win32InitDSound(window, soundOutput.samplesPerSecond, soundOutput.secondaryBufferSize);
             win32ClearBuffer(&soundOutput);
             globalSecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
@@ -919,7 +934,7 @@ int main(HINSTANCE instance,
 #endif
 
             // TODO(casey): Pool with bitmap VirtualAlloc
-            int16 *samples = (int16 *)VirtualAlloc(0, soundOutput.secondaryBufferSize,
+            samples = (int16 *)VirtualAlloc(0, soundOutput.secondaryBufferSize,
                                                    MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 
 #if HANDMADE_INTERNAL
@@ -1109,80 +1124,27 @@ int main(HINSTANCE instance,
 
                         gameUpdateAndRender(newInput);
                         globalBackbuffer.memory = (void *)globalVideoBuffer;
-#if 0
+
                         LARGE_INTEGER audioWallClock = win32GetWallClock();
                         real32 fromBeginToAudioSeconds = win32GetSecondsElapsed(flipWallClock, audioWallClock);
 
-                        DWORD playCursor;
-                        DWORD writeCursor;
-                        if (globalSecondaryBuffer->GetCurrentPosition(&playCursor, &writeCursor) == DS_OK)
+                        DWORD byteToLock = 0;
+                        DWORD targetCursor = 0;
+                        DWORD bytesToWrite = 0;
+                        DWORD playCursor = 0;
+                        DWORD writeCursor = 0;
+                        bool32 soundIsValid = false;
+                        // TODO(casey): Tighten up sound logic so that we know where we should be
+                        // writing to and can anticipate the time spent in the game update.
+                        if (SUCCEEDED(globalSecondaryBuffer->GetCurrentPosition(&playCursor, &writeCursor)))
                         {
-                            /* NOTE(casey):
+                            byteToLock = ((soundOutput.runningSampleIndex * soundOutput.bytesPerSample) %
+                                          soundOutput.secondaryBufferSize);
 
-                               Here is how sound output computation works.
-
-                               We define a safety value that is the number
-                               of samples we think our game update loop
-                               may vary by (let's say up to 2ms)
-                       
-                               When we wake up to write audio, we will look
-                               and see what the play cursor position is and we
-                               will forecast ahead where we think the play
-                               cursor will be on the next frame boundary.
-
-                               We will then look to see if the write cursor is
-                               before that by at least our safety value.  If
-                               it is, the target fill position is that frame
-                               boundary plus one frame.  This gives us perfect
-                               audio sync in the case of a card that has low
-                               enough latency.
-
-                               If the write cursor is _after_ that safety
-                               margin, then we assume we can never sync the
-                               audio perfectly, so we will write one frame's
-                               worth of audio plus the safety margin's worth
-                               of guard samples.
-                            */
-                            if (!soundIsValid)
-                            {
-                                soundOutput.runningSampleIndex = writeCursor / soundOutput.bytesPerSample;
-                                soundIsValid = true;
-                            }
-
-                            DWORD byteToLock = ((soundOutput.runningSampleIndex * soundOutput.bytesPerSample) %
-                                                soundOutput.secondaryBufferSize);
-
-                            DWORD expectedSoundBytesPerFrame =
-                                (int)((real32)(soundOutput.samplesPerSecond * soundOutput.bytesPerSample) /
-                                      gameUpdateHz);
-                            real32 secondsLeftUntilFlip = (targetSecondsPerFrame - fromBeginToAudioSeconds);
-                            DWORD expectedBytesUntilFlip = (DWORD)((secondsLeftUntilFlip / targetSecondsPerFrame) * (real32)expectedSoundBytesPerFrame);
-
-                            DWORD expectedFrameBoundaryByte = playCursor + expectedBytesUntilFlip;
-
-                            DWORD safeWriteCursor = writeCursor;
-                            if (safeWriteCursor < playCursor)
-                            {
-                                safeWriteCursor += soundOutput.secondaryBufferSize;
-                            }
-                            Assert(safeWriteCursor >= playCursor);
-                            safeWriteCursor += soundOutput.safetyBytes;
-
-                            bool32 audioCardIsLowLatency = (safeWriteCursor < expectedFrameBoundaryByte);
-
-                            DWORD targetCursor = 0;
-                            if (audioCardIsLowLatency)
-                            {
-                                targetCursor = (expectedFrameBoundaryByte + expectedSoundBytesPerFrame);
-                            }
-                            else
-                            {
-                                targetCursor = (writeCursor + expectedSoundBytesPerFrame +
-                                                soundOutput.safetyBytes);
-                            }
-                            targetCursor = (targetCursor % soundOutput.secondaryBufferSize);
-
-                            DWORD bytesToWrite = 0;
+                            targetCursor =
+                                ((playCursor +
+                                  (soundOutput.latencySampleCount * soundOutput.bytesPerSample)) %
+                                 soundOutput.secondaryBufferSize);
                             if (byteToLock > targetCursor)
                             {
                                 bytesToWrite = (soundOutput.secondaryBufferSize - byteToLock);
@@ -1193,32 +1155,42 @@ int main(HINSTANCE instance,
                                 bytesToWrite = targetCursor - byteToLock;
                             }
 
-                            GameSoundOutputBuffer soundBuffer = {};
-                            soundBuffer.samplesPerSecond = soundOutput.samplesPerSecond;
-                            soundBuffer.sampleCount = bytesToWrite / soundOutput.bytesPerSample;
-                            soundBuffer.samples = samples;
-                            if (game.getSoundSamples)
-                            {
-                                game.getSoundSamples(&thread, &gameMemory, &soundBuffer);
-                            }
+                            soundIsValid = true;
+                        }
 
-#if HANDMADE_INTERNAL
-                            Win32DebugTimeMarker *marker = &debugTimeMarkers[debugTimeMarkerIndex];
-                            marker->outputPlayCursor = playCursor;
-                            marker->outputWriteCursor = writeCursor;
-                            marker->outputLocation = byteToLock;
-                            marker->outputByteCount = bytesToWrite;
-                            marker->expectedFlipPlayCursor = expectedFrameBoundaryByte;
+                        GameSoundOutputBuffer soundBuffer = {};
+                        soundBuffer.samplesPerSecond = soundOutput.samplesPerSecond;
+                        soundBuffer.sampleCount = bytesToWrite / soundOutput.bytesPerSample;
+                        soundBuffer.samples = samples;
+                        
+                        gameGetSoundSamples(soundBuffer.sampleCount, soundBuffer.samplesPerSecond, soundOutput.toneHz);
 
-                            DWORD unwrappedWriteCursor = writeCursor;
-                            if (unwrappedWriteCursor < playCursor)
-                            {
-                                unwrappedWriteCursor += soundOutput.secondaryBufferSize;
-                            }
-                            audioLatencyBytes = unwrappedWriteCursor - playCursor;
-                            audioLatencySeconds =
-                                (((real32)audioLatencyBytes / (real32)soundOutput.bytesPerSample) /
-                                 (real32)soundOutput.samplesPerSecond);
+                        // call sound gameUpdateAndRender(&Buffer, XOffset, YOffset, &SoundBuffer, SoundOutput.ToneHz);
+
+                        // NOTE(casey): DirectSound output test
+
+                        if(soundIsValid){
+                            win32FillSoundBuffer(&soundOutput, byteToLock, bytesToWrite, &soundBuffer);
+                        }
+                        
+
+#if 0
+                        Win32DebugTimeMarker *marker = &debugTimeMarkers[debugTimeMarkerIndex];
+                        marker->outputPlayCursor = playCursor;
+                        marker->outputWriteCursor = writeCursor;
+                        marker->outputLocation = byteToLock;
+                        marker->outputByteCount = bytesToWrite;
+                        marker->expectedFlipPlayCursor = expectedFrameBoundaryByte;
+
+                        DWORD unwrappedWriteCursor = writeCursor;
+                        if (unwrappedWriteCursor < playCursor)
+                        {
+                            unwrappedWriteCursor += soundOutput.secondaryBufferSize;
+                        }
+                        audioLatencyBytes = unwrappedWriteCursor - playCursor;
+                        audioLatencySeconds =
+                            (((real32)audioLatencyBytes / (real32)soundOutput.bytesPerSample) /
+                             (real32)soundOutput.samplesPerSecond);
 
 #if 0
                             char textBuffer[256];
@@ -1229,79 +1201,78 @@ int main(HINSTANCE instance,
                             OutputDebugStringA(textBuffer);
 #endif
 #endif
-                            win32FillSoundBuffer(&soundOutput, byteToLock, bytesToWrite, &soundBuffer);
-                        }
-                        else
+                    }
+                    else
+                    {
+                        soundIsValid = false;
+                    }
+
+                    LARGE_INTEGER workCounter = win32GetWallClock();
+                    real32 workSecondsElapsed = win32GetSecondsElapsed(lastCounter, workCounter);
+
+                    // TODO(casey): NOT TESTED YET!  PROBABLY BUGGY!!!!!
+                    real32 secondsElapsedForFrame = workSecondsElapsed;
+                    if (secondsElapsedForFrame < targetSecondsPerFrame)
+                    {
+                        if (sleepIsGranular)
                         {
-                            soundIsValid = false;
-                        }
-#endif
-                        LARGE_INTEGER workCounter = win32GetWallClock();
-                        real32 workSecondsElapsed = win32GetSecondsElapsed(lastCounter, workCounter);
-
-                        // TODO(casey): NOT TESTED YET!  PROBABLY BUGGY!!!!!
-                        real32 secondsElapsedForFrame = workSecondsElapsed;
-                        if (secondsElapsedForFrame < targetSecondsPerFrame)
-                        {
-                            if (sleepIsGranular)
+                            DWORD sleepMS = (DWORD)(1000.0f * (targetSecondsPerFrame -
+                                                               secondsElapsedForFrame));
+                            if (sleepMS > 0)
                             {
-                                DWORD sleepMS = (DWORD)(1000.0f * (targetSecondsPerFrame -
-                                                                   secondsElapsedForFrame));
-                                if (sleepMS > 0)
-                                {
-                                    Sleep(sleepMS);
-                                }
-                            }
-
-                            real32 testSecondsElapsedForFrame = win32GetSecondsElapsed(lastCounter,
-                                                                                       win32GetWallClock());
-                            if (testSecondsElapsedForFrame < targetSecondsPerFrame)
-                            {
-                                // TODO(casey): LOG MISSED SLEEP HERE
-                            }
-
-                            while (secondsElapsedForFrame < targetSecondsPerFrame)
-                            {
-                                secondsElapsedForFrame = win32GetSecondsElapsed(lastCounter,
-                                                                                win32GetWallClock());
+                                Sleep(sleepMS);
                             }
                         }
-                        else
+
+                        real32 testSecondsElapsedForFrame = win32GetSecondsElapsed(lastCounter,
+                                                                                   win32GetWallClock());
+                        if (testSecondsElapsedForFrame < targetSecondsPerFrame)
                         {
-                            // TODO(casey): MISSED FRAME RATE!
-                            // TODO(casey): Logging
+                            // TODO(casey): LOG MISSED SLEEP HERE
                         }
 
-                        LARGE_INTEGER endCounter = win32GetWallClock();
-                        real32 MSPerFrame = 1000.0f * win32GetSecondsElapsed(lastCounter, endCounter);
-                        lastCounter = endCounter;
+                        while (secondsElapsedForFrame < targetSecondsPerFrame)
+                        {
+                            secondsElapsedForFrame = win32GetSecondsElapsed(lastCounter,
+                                                                            win32GetWallClock());
+                        }
+                    }
+                    else
+                    {
+                        // TODO(casey): MISSED FRAME RATE!
+                        // TODO(casey): Logging
+                    }
 
-                        win32_window_dimension dimension = win32GetWindowDimension(window);
-                        HDC deviceContext = GetDC(window);
-                        win32DisplayBufferInWindow(&globalBackbuffer, deviceContext,
-                                                   dimension.Width, dimension.Height);
-                        ReleaseDC(window, deviceContext);
+                    LARGE_INTEGER endCounter = win32GetWallClock();
+                    real32 MSPerFrame = 1000.0f * win32GetSecondsElapsed(lastCounter, endCounter);
+                    lastCounter = endCounter;
 
-                        flipWallClock = win32GetWallClock();
+                    win32_window_dimension dimension = win32GetWindowDimension(window);
+                    HDC deviceContext = GetDC(window);
+                    win32DisplayBufferInWindow(&globalBackbuffer, deviceContext,
+                                               dimension.Width, dimension.Height);
+                    ReleaseDC(window, deviceContext);
+
+                    flipWallClock = win32GetWallClock();
 #if HANDMADE_INTERNAL
-                        // NOTE(casey): This is debug code
+                    // NOTE(casey): This is debug code
+                    {
+                        DWORD playCursor;
+                        DWORD writeCursor;
+                        if (globalSecondaryBuffer->GetCurrentPosition(&playCursor, &writeCursor) == DS_OK)
                         {
-                            DWORD playCursor;
-                            DWORD writeCursor;
-                            if (globalSecondaryBuffer->GetCurrentPosition(&playCursor, &writeCursor) == DS_OK)
-                            {
-                                Assert(debugTimeMarkerIndex < ArrayCount(debugTimeMarkers));
-                                Win32DebugTimeMarker *Marker = &debugTimeMarkers[debugTimeMarkerIndex];
-                                Marker->flipPlayCursor = playCursor;
-                                Marker->flipWriteCursor = writeCursor;
-                            }
+                            Assert(debugTimeMarkerIndex < ArrayCount(debugTimeMarkers));
+                            Win32DebugTimeMarker *Marker = &debugTimeMarkers[debugTimeMarkerIndex];
+                            Marker->flipPlayCursor = playCursor;
+                            Marker->flipWriteCursor = writeCursor;
                         }
+                    }
 #endif
 
-                        GameInput *temp = newInput;
-                        newInput = oldInput;
-                        oldInput = temp;
-                        // TODO(casey): Should I clear these here?
+                    GameInput *temp = newInput;
+                    newInput = oldInput;
+                    oldInput = temp;
+                    // TODO(casey): Should I clear these here?
 
 #if 0
                         uint64 EndCycleCount = __rdtsc();
@@ -1318,18 +1289,13 @@ int main(HINSTANCE instance,
 #endif
 
 #if HANDMADE_INTERNAL
-                        ++debugTimeMarkerIndex;
-                        if (debugTimeMarkerIndex == ArrayCount(debugTimeMarkers))
-                        {
-                            debugTimeMarkerIndex = 0;
-                        }
-#endif
+                    ++debugTimeMarkerIndex;
+                    if (debugTimeMarkerIndex == ArrayCount(debugTimeMarkers))
+                    {
+                        debugTimeMarkerIndex = 0;
                     }
+#endif
                 }
-            }
-            else
-            {
-                // TODO(casey): Logging
             }
         }
         else

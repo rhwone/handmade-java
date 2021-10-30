@@ -80,12 +80,8 @@ public class GamePlatform {
         return game.renderWeirdGradient(gameControllerInput);
     }
 
-    public static byte[] win32platform_getSoundBuffer() {
-        return game.getSimpleAudioBuffer();
-    }
-
-    private static GameButtonState mapGameButtonState(int halfTransitionCount, boolean endedDown) {
-        return new GameButtonState(halfTransitionCount, endedDown);
+    public static short[] win32platform_getSoundSamples(int sampleCount, int samplesPerSecond, int toneHz) {
+        return game.outputSound(sampleCount, samplesPerSecond, toneHz);
     }
 
     private static GameControllerInput mapScalarsToGameControllerInput(int moveUpHalfTransitionCount,
@@ -134,5 +130,9 @@ public class GamePlatform {
                 mapGameButtonState(backHalfTransitionCount, backEndedDown),
                 mapGameButtonState(startHalfTransitionCount, startEndedDown)
         );
+    }
+
+    private static GameButtonState mapGameButtonState(int halfTransitionCount, boolean endedDown) {
+        return new GameButtonState(halfTransitionCount, endedDown);
     }
 }
