@@ -4,17 +4,32 @@ import se.abjorklund.game.controller.GameButtonState;
 import se.abjorklund.game.controller.GameControllerInput;
 import se.abjorklund.win32.JNIPlatform;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 public class GamePlatform {
+    public static final int SCREEN_WIDTH = 1280;
+    public static final int SCREEN_HEIGHT = 720;
+    public static final int BYTES_PER_PIXEL = 4;
+    public static ByteBuffer VIDEO_BUFFER;
+
     private static final JNIPlatform JNI_PLATFORM = new JNIPlatform();
-    private static Game game;
+    private static final Game game = new Game();
 
 
     public static void main(String[] args) {
-        game = new Game();
-        JNI_PLATFORM.start();
+        int screenWidth = SCREEN_WIDTH * SCREEN_HEIGHT * BYTES_PER_PIXEL;
+        VIDEO_BUFFER = createVideoBuffer(screenWidth);
+        JNI_PLATFORM.start(VIDEO_BUFFER, screenWidth);
     }
 
-    public static byte[] win32platform_gameUpdateAndRender(int moveUpHalfTransitionCount,
+    private static ByteBuffer createVideoBuffer(int screenWidth) {
+        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(screenWidth);
+        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+        return byteBuffer;
+    }
+
+    public static void win32platform_gameUpdateAndRender(int moveUpHalfTransitionCount,
                                                            boolean moveUpEndedDown,
                                                            int moveDownHalfTransitionCount,
                                                            boolean moveDownEndedDown,
@@ -77,15 +92,11 @@ public class GamePlatform {
             System.exit(0);
         }
 
-        return game.renderWeirdGradient(gameControllerInput);
+        game.DEBUG_renderRectangles(gameControllerInput);
     }
 
-    public static byte[] win32platform_getSoundBuffer() {
-        return game.getSimpleAudioBuffer();
-    }
-
-    private static GameButtonState mapGameButtonState(int halfTransitionCount, boolean endedDown) {
-        return new GameButtonState(halfTransitionCount, endedDown);
+    public static short[] win32platform_getSoundSamples(int sampleCount, int samplesPerSecond, int toneHz) {
+        return new short[16]; // game.outputSound(sampleCount, samplesPerSecond, toneHz);
     }
 
     private static GameControllerInput mapScalarsToGameControllerInput(int moveUpHalfTransitionCount,
@@ -134,5 +145,9 @@ public class GamePlatform {
                 mapGameButtonState(backHalfTransitionCount, backEndedDown),
                 mapGameButtonState(startHalfTransitionCount, startEndedDown)
         );
+    }
+
+    private static GameButtonState mapGameButtonState(int halfTransitionCount, boolean endedDown) {
+        return new GameButtonState(halfTransitionCount, endedDown);
     }
 }
