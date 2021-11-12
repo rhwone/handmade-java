@@ -41,8 +41,10 @@ public class Rectangle {
 
     // Static helpers
 
-    public static boolean isInside(Rectangle rectangle, int pixelX, int pixelY) {
-        return (pixelX >= rectangle.getUpperLeft().getX() && pixelY >= rectangle.getUpperLeft().getY()) &&
-                (pixelX <= rectangle.getLowerRight().getX() && pixelY <= rectangle.getLowerRight().getY());
+    public static boolean isInside(Rectangle rectangle, Vector2 pos) {
+        int x = pos.getX();
+        int y = pos.getY();
+        return (x >= rectangle.getUpperLeft().getX() && y >= rectangle.getUpperLeft().getY()) &&
+                (x <= rectangle.getLowerRight().getX() && y <= rectangle.getLowerRight().getY());
     }
 }

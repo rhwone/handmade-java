@@ -12,8 +12,6 @@ public class Game {
 
     public static final GameState GAMESTATE = new GameState();
 
-    static int blueOffset = 0;
-    static int greenOffset = 0;
     static float tSine = 0;
     private static final double PI = 3.14159265359;
 
@@ -41,10 +39,10 @@ public class Game {
     }
 
 
-    public byte[] renderWeirdGradient(GameControllerInput controller) {
-        int width = 1280;
-        int height = 740;
-        int bytesPerPixel = 4;
+    public void DEBUG_renderRectangles(GameControllerInput controller) {
+        int width = GamePlatform.SCREEN_WIDTH;
+        int height = GamePlatform.SCREEN_HEIGHT;
+        int bytesPerPixel = GamePlatform.BYTES_PER_PIXEL;
         int pitch = width * bytesPerPixel;
 
         /*
@@ -58,109 +56,104 @@ public class Game {
          * to be thrown either at the time of the access or at some later time.
          * */
 
-        byte[] buffer = new byte[(width * height) * bytesPerPixel];
+        //byte[] buffer = new byte[(width * height) * bytesPerPixel];
 
         if (controller.isAnalog()) {
-            // NOTE(casey): Use analog movement tuning
-            blueOffset += (int) (4.0f * controller.getStickAverageX());
+            // Analog controls
         } else {
-            int currentY = GAMESTATE.getPlayer().position().getY();
-            int currentX = GAMESTATE.getPlayer().position().getX();
-            // NOTE(casey): Use digital movement tuning
-            int VELOCITY = 5;
+            Vector2 playerPosition = GAMESTATE.getPlayer().position();
+
+            int currentY = playerPosition.getY();
+            int currentX = playerPosition.getX();
+
+            int velocity = 20;
+
             if (controller.getMoveLeft().endedDown()) {
-                GAMESTATE.getPlayer().position().setX(currentX - VELOCITY);
+                playerPosition.setX(currentX - velocity);
             }
 
             if (controller.getMoveRight().endedDown()) {
-                GAMESTATE.getPlayer().position().setX(currentX + VELOCITY);
+                playerPosition.setX(currentX + velocity);
             }
 
             if (controller.getMoveUp().endedDown()) {
-                GAMESTATE.getPlayer().position().setY(currentY - VELOCITY);
+                playerPosition.setY(currentY - velocity);
             }
 
             if (controller.getMoveDown().endedDown()) {
-                GAMESTATE.getPlayer().position().setY(currentY + VELOCITY);
+                playerPosition.setY(currentY + velocity);
             }
         }
 
         List<Rectangle> rectangles = DEBUG_CreateRectangles();
+        DEBUG_DrawPlayer(rectangles);
 
-        rectangles.add(DEBUG_DrawPlayer());
 
-        /*Rectangle rect1 = new Rectangle(new Vector2(10, 10), new Vector2(20, 20), 0x66AB00FF);
-        Rectangle rect2 = new Rectangle(new Vector2(30, 10), new Vector2(40, 20), 0x66AB00FF);
-        Rectangle rect3 = new Rectangle(new Vector2(50, 10), new Vector2(60, 20), 0x66AB00FF);
-        Rectangle rect4 = new Rectangle(new Vector2(70, 10), new Vector2(80, 20), 0x66AB00FF);*/
+        renderRectangles(bytesPerPixel, pitch, rectangles);
+    }
 
-        ByteBuffer byteBuffer = ByteBuffer.allocate(4);
+    private void renderRectangles(int bytesPerPixel, int pitch, List<Rectangle> rectangles) {
+        ByteBuffer colorBuffer = ByteBuffer.allocate(4);
+
         for (Rectangle rectangle : rectangles) {
-            byte[] color = byteBuffer.putInt(rectangle.getColor()).array();
+            byte[] color = colorBuffer.putInt(rectangle.getColor()).array();
 
-            int row = 0;
-            for (int y = 0; y < height; ++y) {
+            Vector2 upperLeft = rectangle.getUpperLeft();
+            Vector2 lowerRight = rectangle.getLowerRight();
 
-                int pixelOnRow = 0;
-                for (int x = 0; x < width; ++x) {
+            int row = upperLeft.getY();
+            for (int y = upperLeft.getY(); y <= lowerRight.getY(); ++y) {
 
-                    if (Rectangle.isInside(rectangle, x, y)) {
-                        int offsetInBytes = (row * pitch) + (pixelOnRow * bytesPerPixel);
-                        buffer[offsetInBytes] = color[0];
-                        buffer[offsetInBytes + 1] = color[1];
-                        buffer[offsetInBytes + 2] = color[2];
-                        buffer[offsetInBytes + 3] = color[3];
-                    }
+                // Maybe only loop the range between top left and bottom right index?
+
+                int pixelOnRow = upperLeft.getX();
+                for (int x = upperLeft.getX(); x < lowerRight.getX(); ++x) {
+
+                    int offsetInBytes = (row * pitch) + (pixelOnRow * bytesPerPixel);
+                    GamePlatform.VIDEO_BUFFER.put(offsetInBytes, color[0]);
+                    GamePlatform.VIDEO_BUFFER.put(offsetInBytes + 1, color[1]);
+                    GamePlatform.VIDEO_BUFFER.put(offsetInBytes + 2, color[2]);
+                    GamePlatform.VIDEO_BUFFER.put(offsetInBytes + 3, color[3]);
+                    /*buffer[offsetInBytes] = color[0];
+                    buffer[offsetInBytes + 1] = color[1];
+                    buffer[offsetInBytes + 2] = color[2];
+                    buffer[offsetInBytes + 3] = color[3];*/
 
                     ++pixelOnRow;
                 }
                 ++row;
             }
-            byteBuffer.clear();
+            colorBuffer.clear();
         }
-
-        //int row = 0;
-  /*      for (int y = 0; y < height; ++y) {
-
-            int pixelOnRow = 0;
-            for (int x = 0; x < width; ++x) {
-                int offsetInBytes = (row * pitch) + (pixelOnRow * bytesPerPixel);
-
-                byte blue = (byte) (x + (blueOffset * 2));
-                byte green = (byte) (y + (greenOffset * 2));
-
-                buffer[offsetInBytes] = blue;
-                buffer[offsetInBytes + 1] = green;
-                buffer[offsetInBytes + 2] = (byte) 0x22;
-                buffer[offsetInBytes + 3] = (byte) 0x00;
-
-                ++pixelOnRow;
-            }
-            ++row;
-        }*/
-        return buffer;
     }
 
-    private Rectangle DEBUG_DrawPlayer() {
+    private void DEBUG_DrawPlayer(List<Rectangle> rectangles) {
         Vector2 playerPosition = GAMESTATE.getPlayer().position();
-        Vector2 upperLeft = new Vector2(playerPosition.getX() - 5, playerPosition.getY() - 5);
-        Vector2 lowerRight = new Vector2(playerPosition.getX() + 5, playerPosition.getY() + 5);
-        return new Rectangle(upperLeft, lowerRight, 0x99999900);
+        int upperLeftX = playerPosition.getX() - 7;
+        int upperLeftY = playerPosition.getY() - 7;
+        int lowerRightX = playerPosition.getX() + 7;
+        int lowerRightY = playerPosition.getY() + 7;
+
+        rectangles.add(new Rectangle(new Vector2(upperLeftX, upperLeftY), new Vector2(lowerRightX, lowerRightY), 0xFF999900));
+        rectangles.add(new Rectangle(new Vector2(upperLeftX + 1, upperLeftY + 1), new Vector2(lowerRightX - 1, lowerRightY - 1), 0x00000000));
+        rectangles.add(new Rectangle(new Vector2(upperLeftX + 2, upperLeftY + 2), new Vector2(lowerRightX - 2, lowerRightY - 2), 0xFF999900));
     }
 
     private List<Rectangle> DEBUG_CreateRectangles() {
         List<Rectangle> rectangles = new ArrayList<>();
         int squareWidth = 20;
 
-        for (int x = 0; x < 30; x += 2) {
+        for (int x = 0; x < 50; x++) {
             int upperLeftX = squareWidth * x;
             int lowerRightX = upperLeftX + squareWidth;
 
-            for (int y = 0; y < 30; y += 2) {
+            for (int y = 0; y < 30; y++) {
                 int upperLeftY = squareWidth * y;
                 int lowerRightY = upperLeftY + squareWidth;
 
                 rectangles.add(new Rectangle(new Vector2(upperLeftX, upperLeftY), new Vector2(lowerRightX, lowerRightY), 0x66AB00FF));
+                rectangles.add(new Rectangle(new Vector2(upperLeftX + 1, upperLeftY + 1), new Vector2(lowerRightX - 1, lowerRightY - 1), 0x00000000));
+                rectangles.add(new Rectangle(new Vector2(upperLeftX + 2, upperLeftY + 2), new Vector2(lowerRightX - 2, lowerRightY - 2), 0x66AB00FF));
             }
         }
         return rectangles;

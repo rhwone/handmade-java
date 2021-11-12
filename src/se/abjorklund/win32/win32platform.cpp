@@ -20,10 +20,10 @@ global_variable int64 globalPerfCountFrequency;
 global_variable HINSTANCE globalhinstDLL;
 global_variable JNIEnv *globalJNIEnv;
 global_variable jobject globalThisObjPointer;
-global_variable byte *globalVideoBuffer;
+global_variable void *globalVideoBuffer;
 global_variable int16 *samples;
 
-#define VIDEO_BUFFER_SIZE (1280 * 740) * 4
+#define VIDEO_BUFFER_SIZE (1280 * 720) * 4
 
 // NOTE(casey): XInputGetState
 #define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState)
@@ -109,9 +109,9 @@ internal void gameUpdateAndRender(GameInput *newInput)
     real32 stickAverageY = newInput->controller.stickAverageY;
 
     jclass gameClass = globalJNIEnv->FindClass("se/abjorklund/game/GamePlatform");
-    jmethodID getVideoBufferId = globalJNIEnv->GetStaticMethodID(gameClass, "win32platform_gameUpdateAndRender", "(IZIZIZIZIZIZIZIZIZIZIZIZZZFF)[B");
+    jmethodID getVideoBufferId = globalJNIEnv->GetStaticMethodID(gameClass, "win32platform_gameUpdateAndRender", "(IZIZIZIZIZIZIZIZIZIZIZIZZZFF)V");
 
-    jbyteArray javaVideoBuffer = (jbyteArray)globalJNIEnv->CallStaticObjectMethod(
+    globalJNIEnv->CallStaticObjectMethod(
         gameClass,
         getVideoBufferId,
         moveUpHalfTransitionCount,
@@ -143,12 +143,7 @@ internal void gameUpdateAndRender(GameInput *newInput)
         stickAverageX,
         stickAverageY);
 
-    jsize lengthOfArray = globalJNIEnv->GetArrayLength(javaVideoBuffer);
-    jbyte *elements = globalJNIEnv->GetByteArrayElements(javaVideoBuffer, NULL);
-
-    std::memcpy(globalVideoBuffer, elements, lengthOfArray);
     globalJNIEnv->DeleteLocalRef(gameClass);
-    globalJNIEnv->ReleaseByteArrayElements(javaVideoBuffer, elements, JNI_ABORT);
 }
 
 // Win32
@@ -1325,9 +1320,9 @@ BOOL DllMain(
 
 extern "C"
 {
-    __declspec(dllexport) void startPlatformLoop(JNIEnv *env, jobject thisObj)
+    __declspec(dllexport) void startPlatformLoop(JNIEnv *env, jobject thisObj, void *videoBuffer, jint videoBufferSize)
     {
-        globalVideoBuffer = new byte[VIDEO_BUFFER_SIZE];
+        globalVideoBuffer = videoBuffer;
         globalJNIEnv = env;
         globalThisObjPointer = thisObj;
         main(globalhinstDLL, NULL, NULL, NULL);
