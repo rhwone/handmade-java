@@ -7,5 +7,5 @@ public class JNIPlatform {
         System.load("G:\\handmade-java\\src\\se\\abjorklund\\win32\\middleware.dll");
     }
 
-    public native void start(ByteBuffer byteBuffer, int bufferSize);
+    public native void start(ByteBuffer byteBuffer, int screenWidth, int screenHeight);
 }

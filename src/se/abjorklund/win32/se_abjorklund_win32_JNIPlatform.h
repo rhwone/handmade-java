@@ -10,10 +10,10 @@ extern "C" {
 /*
  * Class:     se_abjorklund_win32_JNIPlatform
  * Method:    start
- * Signature: (Ljava/nio/ByteBuffer;I)V
+ * Signature: (Ljava/nio/ByteBuffer;II)V
  */
 JNIEXPORT void JNICALL Java_se_abjorklund_win32_JNIPlatform_start
-  (JNIEnv *, jobject, jobject, jint);
+  (JNIEnv *, jobject, jobject, jint, jint);
 
 #ifdef __cplusplus
 }

@@ -169,6 +169,7 @@ struct GameInput
     GameButtonState mouseButtons[5];
     int32 mouseX, mouseY, mouseZ;
 
+    real32 timeStep;
     // TODO(casey): Insert clock values here.    
     GameControllerInput controller;
 };
