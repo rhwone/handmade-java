@@ -22,6 +22,8 @@ global_variable JNIEnv *globalJNIEnv;
 global_variable jobject globalThisObjPointer;
 global_variable void *globalVideoBuffer;
 global_variable int16 *samples;
+global_variable int32 globalScreenWidth;
+global_variable int32 globalScreenHeight;
 
 #define VIDEO_BUFFER_SIZE (1280 * 720) * 4
 
@@ -66,82 +68,41 @@ internal void gameGetSoundSamples(int sampleCount, int samplesPerSecond, int ton
 
 internal void gameUpdateAndRender(GameInput *newInput)
 {
-
-    int moveUpHalfTransitionCount = newInput->controller.moveUp.halfTransitionCount;
-    bool32 moveUpEndedDown = newInput->controller.moveUp.endedDown;
-
-    int moveDownHalfTransitionCount = newInput->controller.moveDown.halfTransitionCount;
-    bool32 moveDownEndedDown = newInput->controller.moveDown.endedDown;
-
-    int moveLeftHalfTransitionCount = newInput->controller.moveLeft.halfTransitionCount;
-    bool32 moveLeftEndedDown = newInput->controller.moveLeft.endedDown;
-
-    int moveRightHalfTransitionCount = newInput->controller.moveRight.halfTransitionCount;
-    bool32 moveRightEndedDown = newInput->controller.moveRight.endedDown;
-
-    int actionUpHalfTransitionCount = newInput->controller.actionUp.halfTransitionCount;
-    bool32 actionUpEndedDown = newInput->controller.actionUp.endedDown;
-
-    int actionDownHalfTransitionCount = newInput->controller.actionDown.halfTransitionCount;
-    bool32 actionDownEndedDown = newInput->controller.actionDown.endedDown;
-
-    int actionLeftHalfTransitionCount = newInput->controller.actionLeft.halfTransitionCount;
-    bool32 actionLeftEndedDown = newInput->controller.actionLeft.endedDown;
-
-    int actionRightHalfTransitionCount = newInput->controller.actionRight.halfTransitionCount;
-    bool32 actionRightEndedDown = newInput->controller.actionRight.endedDown;
-
-    int leftShoulderHalfTransitionCount = newInput->controller.leftShoulder.halfTransitionCount;
-    bool32 leftShoulderEndedDown = newInput->controller.leftShoulder.endedDown;
-
-    int rightShoulderHalfTransitionCount = newInput->controller.rightShoulder.halfTransitionCount;
-    bool32 rightShoulderEndedDown = newInput->controller.rightShoulder.endedDown;
-
-    int backHalfTransitionCount = newInput->controller.back.halfTransitionCount;
-    bool32 backEndedDown = newInput->controller.back.endedDown;
-
-    int startHalfTransitionCount = newInput->controller.start.halfTransitionCount;
-    bool32 startEndedDown = newInput->controller.start.endedDown;
-
-    bool32 isConnected = newInput->controller.isConnected;
-    bool32 isAnalog = newInput->controller.isAnalog;
-    real32 stickAverageX = newInput->controller.stickAverageX;
-    real32 stickAverageY = newInput->controller.stickAverageY;
-
     jclass gameClass = globalJNIEnv->FindClass("se/abjorklund/game/GamePlatform");
-    jmethodID getVideoBufferId = globalJNIEnv->GetStaticMethodID(gameClass, "win32platform_gameUpdateAndRender", "(IZIZIZIZIZIZIZIZIZIZIZIZZZFF)V");
+    jmethodID getVideoBufferId = globalJNIEnv->GetStaticMethodID(gameClass, "win32platform_gameUpdateAndRender", "(IZIZIZIZIZIZIZIZIZIZIZIZZZFFF)V");
 
     globalJNIEnv->CallStaticObjectMethod(
         gameClass,
         getVideoBufferId,
-        moveUpHalfTransitionCount,
-        moveUpEndedDown,
-        moveDownHalfTransitionCount,
-        moveDownEndedDown,
-        moveLeftHalfTransitionCount,
-        moveLeftEndedDown,
-        moveRightHalfTransitionCount,
-        moveRightEndedDown,
-        actionUpHalfTransitionCount,
-        actionUpEndedDown,
-        actionDownHalfTransitionCount,
-        actionDownEndedDown,
-        actionLeftHalfTransitionCount,
-        actionLeftEndedDown,
-        actionRightHalfTransitionCount,
-        actionRightEndedDown,
-        leftShoulderHalfTransitionCount,
-        leftShoulderEndedDown,
-        rightShoulderHalfTransitionCount,
-        rightShoulderEndedDown,
-        backHalfTransitionCount,
-        backEndedDown,
-        startHalfTransitionCount,
-        startEndedDown,
-        isConnected,
-        isAnalog,
-        stickAverageX,
-        stickAverageY);
+        newInput->controller.moveUp.halfTransitionCount,
+        newInput->controller.moveUp.endedDown,
+        newInput->controller.moveDown.halfTransitionCount,
+        newInput->controller.moveDown.endedDown,
+        newInput->controller.moveLeft.halfTransitionCount,
+        newInput->controller.moveLeft.endedDown,
+        newInput->controller.moveRight.halfTransitionCount,
+        newInput->controller.moveRight.endedDown,
+        newInput->controller.actionUp.halfTransitionCount,
+        newInput->controller.actionUp.endedDown,
+        newInput->controller.actionDown.halfTransitionCount,
+        newInput->controller.actionDown.endedDown,
+        newInput->controller.actionLeft.halfTransitionCount,
+        newInput->controller.actionLeft.endedDown,
+        newInput->controller.actionRight.halfTransitionCount,
+        newInput->controller.actionRight.endedDown,
+        newInput->controller.leftShoulder.halfTransitionCount,
+        newInput->controller.leftShoulder.endedDown,
+        newInput->controller.rightShoulder.halfTransitionCount,
+        newInput->controller.rightShoulder.endedDown,
+        newInput->controller.back.halfTransitionCount,
+        newInput->controller.back.endedDown,
+        newInput->controller.start.halfTransitionCount,
+        newInput->controller.start.endedDown,
+        newInput->controller.isConnected,
+        newInput->controller.isAnalog,
+        newInput->controller.stickAverageX,
+        newInput->controller.stickAverageY,
+        newInput->timeStep);
 
     globalJNIEnv->DeleteLocalRef(gameClass);
 }
@@ -857,7 +818,7 @@ int main(HINSTANCE instance,
 
     WNDCLASSA windowClass = {};
 
-    win32ResizeDIBSection(&globalBackbuffer, 1280, 720);
+    win32ResizeDIBSection(&globalBackbuffer, globalScreenWidth, globalScreenHeight);
 
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
     windowClass.lpfnWndProc = win32MainWindowCallback;
@@ -883,8 +844,8 @@ int main(HINSTANCE instance,
                 0);
         if (window)
         {
+            SetWindowPos(window, 0, 0, 0, globalScreenWidth, globalScreenHeight, 0);
             Win32SoundOutput soundOutput = {};
-
             // TODO(casey): How do we reliably query on this on Windows?
             int monitorRefreshHz = 60;
             HDC refreshDC = GetDC(window);
@@ -961,6 +922,7 @@ int main(HINSTANCE instance,
                 GameInput input[2] = {};
                 GameInput *newInput = &input[0];
                 GameInput *oldInput = &input[1];
+                newInput->timeStep = targetSecondsPerFrame;
 
                 LARGE_INTEGER lastCounter = win32GetWallClock();
                 LARGE_INTEGER flipWallClock = win32GetWallClock();
@@ -1320,8 +1282,11 @@ BOOL DllMain(
 
 extern "C"
 {
-    __declspec(dllexport) void startPlatformLoop(JNIEnv *env, jobject thisObj, void *videoBuffer, jint videoBufferSize)
+    __declspec(dllexport) void startPlatformLoop(JNIEnv *env, jobject thisObj, void *videoBuffer, jint screenWidth, jint screenHeight)
     {
+        printf("startPlatformLoop\n");
+        globalScreenWidth = (int32)screenWidth;
+        globalScreenHeight = (int32)screenHeight;
         globalVideoBuffer = videoBuffer;
         globalJNIEnv = env;
         globalThisObjPointer = thisObj;

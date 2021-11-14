@@ -8,8 +8,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 public class GamePlatform {
-    public static final int SCREEN_WIDTH = 1280;
-    public static final int SCREEN_HEIGHT = 720;
+    public static final int SCREEN_WIDTH = 960;
+    public static final int SCREEN_HEIGHT = 540;
     public static final int BYTES_PER_PIXEL = 4;
     public static ByteBuffer VIDEO_BUFFER;
 
@@ -18,45 +18,49 @@ public class GamePlatform {
 
 
     public static void main(String[] args) {
-        int screenWidth = SCREEN_WIDTH * SCREEN_HEIGHT * BYTES_PER_PIXEL;
-        VIDEO_BUFFER = createVideoBuffer(screenWidth);
-        JNI_PLATFORM.start(VIDEO_BUFFER, screenWidth);
+        int videoBufferSize = SCREEN_WIDTH * SCREEN_HEIGHT * BYTES_PER_PIXEL;
+
+        VIDEO_BUFFER = createVideoBuffer(videoBufferSize);
+
+        JNI_PLATFORM.start(VIDEO_BUFFER, SCREEN_WIDTH, SCREEN_HEIGHT);
     }
 
-    private static ByteBuffer createVideoBuffer(int screenWidth) {
-        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(screenWidth);
+    private static ByteBuffer createVideoBuffer(int bufferSize) {
+        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(bufferSize);
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
         return byteBuffer;
     }
 
-    public static void win32platform_gameUpdateAndRender(int moveUpHalfTransitionCount,
-                                                           boolean moveUpEndedDown,
-                                                           int moveDownHalfTransitionCount,
-                                                           boolean moveDownEndedDown,
-                                                           int moveLeftHalfTransitionCount,
-                                                           boolean moveLeftEndedDown,
-                                                           int moveRightHalfTransitionCount,
-                                                           boolean moveRightEndedDown,
-                                                           int actionUpHalfTransitionCount,
-                                                           boolean actionUpEndedDown,
-                                                           int actionDownHalfTransitionCount,
-                                                           boolean actionDownEndedDown,
-                                                           int actionLeftHalfTransitionCount,
-                                                           boolean actionLeftEndedDown,
-                                                           int actionRightHalfTransitionCount,
-                                                           boolean actionRightEndedDown,
-                                                           int leftShoulderHalfTransitionCount,
-                                                           boolean leftShoulderEndedDown,
-                                                           int rightShoulderHalfTransitionCount,
-                                                           boolean rightShoulderEndedDown,
-                                                           int backHalfTransitionCount,
-                                                           boolean backEndedDown,
-                                                           int startHalfTransitionCount,
-                                                           boolean startEndedDown,
-                                                           boolean isConnected,
-                                                           boolean isAnalog,
-                                                           float stickAverageX,
-                                                           float stickAverageY
+    public static void win32platform_gameUpdateAndRender(
+            int moveUpHalfTransitionCount,
+            boolean moveUpEndedDown,
+            int moveDownHalfTransitionCount,
+            boolean moveDownEndedDown,
+            int moveLeftHalfTransitionCount,
+            boolean moveLeftEndedDown,
+            int moveRightHalfTransitionCount,
+            boolean moveRightEndedDown,
+            int actionUpHalfTransitionCount,
+            boolean actionUpEndedDown,
+            int actionDownHalfTransitionCount,
+            boolean actionDownEndedDown,
+            int actionLeftHalfTransitionCount,
+            boolean actionLeftEndedDown,
+            int actionRightHalfTransitionCount,
+            boolean actionRightEndedDown,
+            int leftShoulderHalfTransitionCount,
+            boolean leftShoulderEndedDown,
+            int rightShoulderHalfTransitionCount,
+            boolean rightShoulderEndedDown,
+            int backHalfTransitionCount,
+            boolean backEndedDown,
+            int startHalfTransitionCount,
+            boolean startEndedDown,
+            boolean isConnected,
+            boolean isAnalog,
+            float stickAverageX,
+            float stickAverageY,
+            float timeStep
     ) {
         GameControllerInput gameControllerInput = mapScalarsToGameControllerInput(moveUpHalfTransitionCount,
                 moveUpEndedDown,
@@ -85,14 +89,15 @@ public class GamePlatform {
                 isConnected,
                 isAnalog,
                 stickAverageX,
-                stickAverageY
+                stickAverageY,
+                timeStep
         );
 
         if (gameControllerInput.getBack().endedDown()) {
             System.exit(0);
         }
 
-        game.DEBUG_renderRectangles(gameControllerInput);
+        game.DEBUG_render(gameControllerInput);
     }
 
     public static short[] win32platform_getSoundSamples(int sampleCount, int samplesPerSecond, int toneHz) {
@@ -126,8 +131,8 @@ public class GamePlatform {
                                                                        boolean isConnected,
                                                                        boolean isAnalog,
                                                                        float stickAverageX,
-                                                                       float stickAverageY) {
-
+                                                                       float stickAverageY,
+                                                                       float timeStep) {
         return new GameControllerInput(isConnected,
                 isAnalog,
                 stickAverageX,
@@ -143,7 +148,8 @@ public class GamePlatform {
                 mapGameButtonState(leftShoulderHalfTransitionCount, leftShoulderEndedDown),
                 mapGameButtonState(rightShoulderHalfTransitionCount, rightShoulderEndedDown),
                 mapGameButtonState(backHalfTransitionCount, backEndedDown),
-                mapGameButtonState(startHalfTransitionCount, startEndedDown)
+                mapGameButtonState(startHalfTransitionCount, startEndedDown),
+                timeStep
         );
     }
 
