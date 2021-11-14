@@ -2,6 +2,7 @@
 # Created by https://www.gitignore.io/api/c,c++,intellij,visualstudio
 # Edit at https://www.gitignore.io/?templates=c,c++,intellij,visualstudio
 
+*.dll
 ### C ###
 # Prerequisites
 *.d

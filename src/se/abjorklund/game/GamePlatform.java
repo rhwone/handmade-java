@@ -7,7 +7,7 @@ import se.abjorklund.win32.JNIPlatform;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-public class GamePlatform {
+public final class GamePlatform {
     public static final int SCREEN_WIDTH = 960;
     public static final int SCREEN_HEIGHT = 540;
     public static final int BYTES_PER_PIXEL = 4;
@@ -62,7 +62,7 @@ public class GamePlatform {
             float stickAverageY,
             float timeStep
     ) {
-        GameControllerInput gameControllerInput = mapScalarsToGameControllerInput(moveUpHalfTransitionCount,
+        GameControllerInput gameControllerInput = mapGameControllerInput(moveUpHalfTransitionCount,
                 moveUpEndedDown,
                 moveDownHalfTransitionCount,
                 moveDownEndedDown,
@@ -104,35 +104,35 @@ public class GamePlatform {
         return new short[16]; // game.outputSound(sampleCount, samplesPerSecond, toneHz);
     }
 
-    private static GameControllerInput mapScalarsToGameControllerInput(int moveUpHalfTransitionCount,
-                                                                       boolean moveUpEndedDown,
-                                                                       int moveDownHalfTransitionCount,
-                                                                       boolean moveDownEndedDown,
-                                                                       int moveLeftHalfTransitionCount,
-                                                                       boolean moveLeftEndedDown,
-                                                                       int moveRightHalfTransitionCount,
-                                                                       boolean moveRightEndedDown,
-                                                                       int actionUpHalfTransitionCount,
-                                                                       boolean actionUpEndedDown,
-                                                                       int actionDownHalfTransitionCount,
-                                                                       boolean actionDownEndedDown,
-                                                                       int actionLeftHalfTransitionCount,
-                                                                       boolean actionLeftEndedDown,
-                                                                       int actionRightHalfTransitionCount,
-                                                                       boolean actionRightEndedDown,
-                                                                       int leftShoulderHalfTransitionCount,
-                                                                       boolean leftShoulderEndedDown,
-                                                                       int rightShoulderHalfTransitionCount,
-                                                                       boolean rightShoulderEndedDown,
-                                                                       int backHalfTransitionCount,
-                                                                       boolean backEndedDown,
-                                                                       int startHalfTransitionCount,
-                                                                       boolean startEndedDown,
-                                                                       boolean isConnected,
-                                                                       boolean isAnalog,
-                                                                       float stickAverageX,
-                                                                       float stickAverageY,
-                                                                       float timeStep) {
+    private static GameControllerInput mapGameControllerInput(int moveUpHalfTransitionCount,
+                                                              boolean moveUpEndedDown,
+                                                              int moveDownHalfTransitionCount,
+                                                              boolean moveDownEndedDown,
+                                                              int moveLeftHalfTransitionCount,
+                                                              boolean moveLeftEndedDown,
+                                                              int moveRightHalfTransitionCount,
+                                                              boolean moveRightEndedDown,
+                                                              int actionUpHalfTransitionCount,
+                                                              boolean actionUpEndedDown,
+                                                              int actionDownHalfTransitionCount,
+                                                              boolean actionDownEndedDown,
+                                                              int actionLeftHalfTransitionCount,
+                                                              boolean actionLeftEndedDown,
+                                                              int actionRightHalfTransitionCount,
+                                                              boolean actionRightEndedDown,
+                                                              int leftShoulderHalfTransitionCount,
+                                                              boolean leftShoulderEndedDown,
+                                                              int rightShoulderHalfTransitionCount,
+                                                              boolean rightShoulderEndedDown,
+                                                              int backHalfTransitionCount,
+                                                              boolean backEndedDown,
+                                                              int startHalfTransitionCount,
+                                                              boolean startEndedDown,
+                                                              boolean isConnected,
+                                                              boolean isAnalog,
+                                                              float stickAverageX,
+                                                              float stickAverageY,
+                                                              float timeStep) {
         return new GameControllerInput(isConnected,
                 isAnalog,
                 stickAverageX,

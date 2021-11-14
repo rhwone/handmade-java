@@ -1,6 +1,6 @@
 package se.abjorklund.game.controller;
 
-public class GameControllerInput {
+public final class GameControllerInput {
     private final boolean isConnected;
     private final boolean isAnalog;
     private final float stickAverageX;
