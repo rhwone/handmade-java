@@ -4,11 +4,12 @@ import se.abjorklund.game.controller.GameControllerInput;
 import se.abjorklund.math.Vector2;
 import se.abjorklund.renderer.Rectangle;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Game {
+import static se.abjorklund.renderer.Renderer.drawRectangle;
+
+public final class Game {
 
     public static final GameState GAMESTATE = new GameState();
 
@@ -80,35 +81,11 @@ public class Game {
     }
 
     private void drawRectangles(int bytesPerPixel, int pitch, List<Rectangle> rectangles) {
-        ByteBuffer colorBuffer = ByteBuffer.allocate(4);
-
         for (Rectangle rectangle : rectangles) {
-            drawRectangle(bytesPerPixel, pitch, colorBuffer, rectangle);
-            colorBuffer.clear();
+            drawRectangle(bytesPerPixel, pitch, rectangle);
         }
     }
 
-    private void drawRectangle(int bytesPerPixel, int pitch, ByteBuffer colorBuffer, Rectangle rectangle) {
-        byte[] color = colorBuffer.putInt(rectangle.getColor()).array();
-
-        Vector2 upperLeft = rectangle.getUpperLeft();
-        Vector2 lowerRight = rectangle.getLowerRight();
-
-        int row = (int)upperLeft.getY();
-        for (int y = (int)upperLeft.getY(); y <= lowerRight.getY(); ++y) {
-            int pixelOnRow = (int)upperLeft.getX();
-            for (int x = (int)upperLeft.getX(); x < lowerRight.getX(); ++x) {
-
-                int offsetInBytes = (row * pitch) + (pixelOnRow * bytesPerPixel);
-                GamePlatform.VIDEO_BUFFER.put(offsetInBytes, color[0]);
-                GamePlatform.VIDEO_BUFFER.put(offsetInBytes + 1, color[1]);
-                GamePlatform.VIDEO_BUFFER.put(offsetInBytes + 2, color[2]);
-                GamePlatform.VIDEO_BUFFER.put(offsetInBytes + 3, color[3]);
-                ++pixelOnRow;
-            }
-            ++row;
-        }
-    }
 
     private void DEBUG_DrawPlayer(List<Rectangle> rectangles) {
         Vector2 playerPosition = GAMESTATE.getPlayer().position();

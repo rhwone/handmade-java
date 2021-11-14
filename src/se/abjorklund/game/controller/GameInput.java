@@ -1,6 +1,6 @@
 package se.abjorklund.game.controller;
 
-public class GameInput {
+public final class GameInput {
     public GameButtonState mouseButton1;
     public GameButtonState mouseButton2;
     public GameButtonState mouseButton3;

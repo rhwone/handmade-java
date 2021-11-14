@@ -1,6 +1,6 @@
 package se.abjorklund.game.controller;
 
-public class GameButtonState {
+public final class GameButtonState {
     private final int halfTransitionCount;
     private final boolean endedDown;
 
