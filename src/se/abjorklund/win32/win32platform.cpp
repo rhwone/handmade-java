@@ -11,7 +11,6 @@
 
 #include "se_abjorklund_win32_JNIPlatform.h"
 
-// TODO(casey): This is a global for now.
 global_variable bool32 globalRunning;
 global_variable bool32 globalPause;
 global_variable win32_offscreen_buffer globalBackbuffer;
@@ -27,7 +26,7 @@ global_variable int32 globalScreenHeight;
 
 #define VIDEO_BUFFER_SIZE (1280 * 720) * 4
 
-// NOTE(casey): XInputGetState
+// NOTE: XInputGetState
 #define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState)
 typedef X_INPUT_GET_STATE(x_input_get_state);
 X_INPUT_GET_STATE(xInputGetStateStub)
@@ -37,7 +36,7 @@ X_INPUT_GET_STATE(xInputGetStateStub)
 global_variable x_input_get_state *xInputGetState_ = xInputGetStateStub;
 #define XInputGetState xInputGetState_
 
-// NOTE(casey): XInputSetState
+// NOTE: XInputSetState
 #define X_INPUT_SET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_VIBRATION *pVibration)
 typedef X_INPUT_SET_STATE(x_input_set_state);
 X_INPUT_SET_STATE(xInputSetStateStub)
@@ -54,8 +53,8 @@ typedef DIRECT_SOUND_CREATE(direct_sound_create);
 
 internal void gameGetSoundSamples(int sampleCount, int samplesPerSecond, int toneHz)
 {   
-    jclass gameClass = globalJNIEnv->FindClass("se/abjorklund/game/GamePlatform");
-    jmethodID getSoundSamplesId = globalJNIEnv->GetStaticMethodID(gameClass, "win32platform_getSoundSamples", "(III)[S");
+    jclass gameClass = globalJNIEnv->FindClass("se/abjorklund/win32/Win32Platform");
+    jmethodID getSoundSamplesId = globalJNIEnv->GetStaticMethodID(gameClass, "getSoundSamples", "(III)[S");
     jshortArray javaSamples = (jshortArray)globalJNIEnv->CallStaticObjectMethod(gameClass, getSoundSamplesId, sampleCount, samplesPerSecond, toneHz);
 
     jsize lengthOfArray = globalJNIEnv->GetArrayLength(javaSamples);
@@ -68,8 +67,8 @@ internal void gameGetSoundSamples(int sampleCount, int samplesPerSecond, int ton
 
 internal void gameUpdateAndRender(GameInput *newInput)
 {
-    jclass gameClass = globalJNIEnv->FindClass("se/abjorklund/game/GamePlatform");
-    jmethodID getVideoBufferId = globalJNIEnv->GetStaticMethodID(gameClass, "win32platform_gameUpdateAndRender", "(IZIZIZIZIZIZIZIZIZIZIZIZZZFFF)V");
+    jclass gameClass = globalJNIEnv->FindClass("se/abjorklund/win32/Win32Platform");
+    jmethodID getVideoBufferId = globalJNIEnv->GetStaticMethodID(gameClass, "gameUpdateAndRender", "(IZIZIZIZIZIZIZIZIZIZIZIZZZFFF)V");
 
     globalJNIEnv->CallStaticObjectMethod(
         gameClass,
@@ -135,24 +134,22 @@ DEBUG_PLATFORM_READ_ENTIRE_FILE(DEBUGPlatformReadEntireFile)
                 if (ReadFile(fileHandle, result.contents, fileSize32, &bytesRead, 0) &&
                     (fileSize32 == bytesRead))
                 {
-                    // NOTE(casey): File read successfully
                     result.contentsSize = fileSize32;
                 }
                 else
                 {
-                    // TODO(casey): Logging
                     DEBUGPlatformFreeFileMemory(thread, result.contents);
                     result.contents = 0;
                 }
             }
             else
             {
-                // TODO(casey): Logging
+                // TODO: Logging
             }
         }
         else
         {
-            // TODO(casey): Logging
+            // TODO: Logging
         }
 
         CloseHandle(fileHandle);

@@ -1,5 +1,6 @@
-package se.abjorklund.game;
+package se.abjorklund.win32;
 
+import se.abjorklund.game.Game;
 import se.abjorklund.game.controller.GameButtonState;
 import se.abjorklund.game.controller.GameControllerInput;
 import se.abjorklund.win32.JNIPlatform;
@@ -7,19 +8,18 @@ import se.abjorklund.win32.JNIPlatform;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-public final class GamePlatform {
-    public static final int SCREEN_WIDTH = 960;
-    public static final int SCREEN_HEIGHT = 540;
-    public static final int BYTES_PER_PIXEL = 4;
-    public static ByteBuffer VIDEO_BUFFER;
-
+public final class Win32Platform {
     private static final JNIPlatform JNI_PLATFORM = new JNIPlatform();
     private static final Game game = new Game();
 
+    public static final int SCREEN_WIDTH = 960;
+    public static final int SCREEN_HEIGHT = 540;
+    public static final int BYTES_PER_PIXEL = 4;
+
+    public static ByteBuffer VIDEO_BUFFER;
 
     public static void main(String[] args) {
         int videoBufferSize = SCREEN_WIDTH * SCREEN_HEIGHT * BYTES_PER_PIXEL;
-
         VIDEO_BUFFER = createVideoBuffer(videoBufferSize);
 
         JNI_PLATFORM.start(VIDEO_BUFFER, SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -31,7 +31,7 @@ public final class GamePlatform {
         return byteBuffer;
     }
 
-    public static void win32platform_gameUpdateAndRender(
+    public static void gameUpdateAndRender(
             int moveUpHalfTransitionCount,
             boolean moveUpEndedDown,
             int moveDownHalfTransitionCount,
@@ -100,7 +100,7 @@ public final class GamePlatform {
         game.DEBUG_render(gameControllerInput);
     }
 
-    public static short[] win32platform_getSoundSamples(int sampleCount, int samplesPerSecond, int toneHz) {
+    public static short[] getSoundSamples(int sampleCount, int samplesPerSecond, int toneHz) {
         return new short[16]; // game.outputSound(sampleCount, samplesPerSecond, toneHz);
     }
 
