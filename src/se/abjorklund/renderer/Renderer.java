@@ -1,6 +1,6 @@
 package se.abjorklund.renderer;
 
-import se.abjorklund.game.GamePlatform;
+import se.abjorklund.win32.Win32Platform;
 
 public final class Renderer {
 
@@ -17,10 +17,10 @@ public final class Renderer {
 
                 int offsetInBytes = (y * pitch) + (x * bytesPerPixel);
 
-                GamePlatform.VIDEO_BUFFER.put(offsetInBytes, (byte) (color >> 24));
-                GamePlatform.VIDEO_BUFFER.put(offsetInBytes + 1, (byte) (color >> 16));
-                GamePlatform.VIDEO_BUFFER.put(offsetInBytes + 2, (byte) (color >> 8));
-                GamePlatform.VIDEO_BUFFER.put(offsetInBytes + 3, (byte) (color));
+                Win32Platform.VIDEO_BUFFER.put(offsetInBytes, (byte) (color >> 24));
+                Win32Platform.VIDEO_BUFFER.put(offsetInBytes + 1, (byte) (color >> 16));
+                Win32Platform.VIDEO_BUFFER.put(offsetInBytes + 2, (byte) (color >> 8));
+                Win32Platform.VIDEO_BUFFER.put(offsetInBytes + 3, (byte) (color));
             }
         }
     }

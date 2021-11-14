@@ -3,6 +3,7 @@ package se.abjorklund.game;
 import se.abjorklund.game.controller.GameControllerInput;
 import se.abjorklund.math.Vector2;
 import se.abjorklund.renderer.Rectangle;
+import se.abjorklund.win32.Win32Platform;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,9 +42,9 @@ public final class Game {
 
 
     public void DEBUG_render(GameControllerInput controller) {
-        int width = GamePlatform.SCREEN_WIDTH;
-        int height = GamePlatform.SCREEN_HEIGHT;
-        int bytesPerPixel = GamePlatform.BYTES_PER_PIXEL;
+        int width = Win32Platform.SCREEN_WIDTH;
+        int height = Win32Platform.SCREEN_HEIGHT;
+        int bytesPerPixel = Win32Platform.BYTES_PER_PIXEL;
         int pitch = width * bytesPerPixel;
 
 
@@ -102,8 +103,8 @@ public final class Game {
     private List<Rectangle> DEBUG_CreateRectangles() {
         List<Rectangle> rectangles = new ArrayList<>();
         int rectanglesPerRow = 50;
-        int squareWidth = GamePlatform.SCREEN_WIDTH / rectanglesPerRow;
-        int squareHeight = GamePlatform.SCREEN_HEIGHT / rectanglesPerRow;
+        int squareWidth = Win32Platform.SCREEN_WIDTH / rectanglesPerRow;
+        int squareHeight = Win32Platform.SCREEN_HEIGHT / rectanglesPerRow;
 
         for (int x = 0; x < rectanglesPerRow; x++) {
             int upperLeftX = squareWidth * x;
