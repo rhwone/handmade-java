@@ -22,8 +22,6 @@ public final class GameControllerInput {
     private final GameButtonState back;
     private final GameButtonState start;
 
-    private final float timeStep;
-
     public GameControllerInput(boolean isConnected,
                                boolean isAnalog,
                                float stickAverageX,
@@ -39,8 +37,7 @@ public final class GameControllerInput {
                                GameButtonState leftShoulder,
                                GameButtonState rightShoulder,
                                GameButtonState back,
-                               GameButtonState start,
-                               float timeStep) {
+                               GameButtonState start) {
         this.isConnected = isConnected;
         this.isAnalog = isAnalog;
         this.stickAverageX = stickAverageX;
@@ -57,7 +54,6 @@ public final class GameControllerInput {
         this.rightShoulder = rightShoulder;
         this.back = back;
         this.start = start;
-        this.timeStep = timeStep;
     }
 
     public boolean isConnected() {

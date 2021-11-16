@@ -60,7 +60,7 @@ public final class Win32Platform {
             boolean isAnalog,
             float stickAverageX,
             float stickAverageY,
-            float timeStep
+            float dT
     ) {
         GameControllerInput gameControllerInput = mapGameControllerInput(moveUpHalfTransitionCount,
                 moveUpEndedDown,
@@ -89,15 +89,14 @@ public final class Win32Platform {
                 isConnected,
                 isAnalog,
                 stickAverageX,
-                stickAverageY,
-                timeStep
+                stickAverageY
         );
 
         if (gameControllerInput.getBack().endedDown()) {
             System.exit(0);
         }
 
-        game.DEBUG_render(gameControllerInput);
+        game.DEBUG_render(gameControllerInput, dT);
     }
 
     public static short[] getSoundSamples(int sampleCount, int samplesPerSecond, int toneHz) {
@@ -131,8 +130,7 @@ public final class Win32Platform {
                                                               boolean isConnected,
                                                               boolean isAnalog,
                                                               float stickAverageX,
-                                                              float stickAverageY,
-                                                              float timeStep) {
+                                                              float stickAverageY) {
         return new GameControllerInput(isConnected,
                 isAnalog,
                 stickAverageX,
@@ -148,8 +146,7 @@ public final class Win32Platform {
                 mapGameButtonState(leftShoulderHalfTransitionCount, leftShoulderEndedDown),
                 mapGameButtonState(rightShoulderHalfTransitionCount, rightShoulderEndedDown),
                 mapGameButtonState(backHalfTransitionCount, backEndedDown),
-                mapGameButtonState(startHalfTransitionCount, startEndedDown),
-                timeStep
+                mapGameButtonState(startHalfTransitionCount, startEndedDown)
         );
     }
 

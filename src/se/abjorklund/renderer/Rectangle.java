@@ -6,9 +6,9 @@ public class Rectangle {
 
     private Vector2 upperLeft;
     private Vector2 lowerRight;
-    private int color;
+    private Color color;
 
-    public Rectangle(Vector2 upperLeft, Vector2 lowerRight, int color) {
+    public Rectangle(Vector2 upperLeft, Vector2 lowerRight, Color color) {
         this.upperLeft = upperLeft;
         this.lowerRight = lowerRight;
         this.color = color;
@@ -30,11 +30,11 @@ public class Rectangle {
         this.lowerRight = lowerRight;
     }
 
-    public int getColor() {
+    public Color getColor() {
         return color;
     }
 
-    public void setColor(int color) {
+    public void setColor(Color color) {
         this.color = color;
     }
 

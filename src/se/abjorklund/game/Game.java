@@ -2,6 +2,8 @@ package se.abjorklund.game;
 
 import se.abjorklund.game.controller.GameControllerInput;
 import se.abjorklund.math.Vector2;
+import se.abjorklund.renderer.Color;
+import se.abjorklund.renderer.Colors;
 import se.abjorklund.renderer.Rectangle;
 import se.abjorklund.win32.Win32Platform;
 
@@ -41,7 +43,7 @@ public final class Game {
     }
 
 
-    public void DEBUG_render(GameControllerInput controller) {
+    public void DEBUG_render(GameControllerInput controller, float dT) {
         int width = Win32Platform.SCREEN_WIDTH;
         int height = Win32Platform.SCREEN_HEIGHT;
         int bytesPerPixel = Win32Platform.BYTES_PER_PIXEL;
@@ -51,39 +53,83 @@ public final class Game {
         if (controller.isAnalog()) {
             // Analog controls
         } else {
-            Vector2 playerPosition = GAMESTATE.getPlayer().position();
 
-            float currentY = playerPosition.getY();
-            float currentX = playerPosition.getX();
-
-            int velocity = 20;
-
-            if (controller.getMoveLeft().endedDown()) {
-                playerPosition.setX(currentX - velocity);
-            }
-
-            if (controller.getMoveRight().endedDown()) {
-                playerPosition.setX(currentX + velocity);
-            }
+            float dPlayerX = 0.0f;
+            float dPlayerY = 0.0f;
 
             if (controller.getMoveUp().endedDown()) {
-                playerPosition.setY(currentY - velocity);
+                dPlayerY = -5.0f;
             }
 
             if (controller.getMoveDown().endedDown()) {
-                playerPosition.setY(currentY + velocity);
+                dPlayerY = 5.0f;
+            }
+
+            if (controller.getMoveLeft().endedDown()) {
+                dPlayerX = -5.0f;
+            }
+
+            if (controller.getMoveRight().endedDown()) {
+                dPlayerX = 5.0f;
+            }
+            float newPlayerX = GAMESTATE.getPlayer().position().getX() + dPlayerX;
+            float newPlayerY = GAMESTATE.getPlayer().position().getY() + dPlayerY;
+            GAMESTATE.getPlayer().position().setX(newPlayerX);
+            GAMESTATE.getPlayer().position().setY(newPlayerY);
+        }
+
+
+        //List<Rectangle> rectangles = DEBUG_CreateRectangles();
+        //DEBUG_DrawPlayer(rectangles);
+
+        int[][] tileMap = {
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                {1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                {1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                {1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+                {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+        };
+
+        List<Rectangle> rectangles = new ArrayList<>();
+
+        float tileWidth = 50;
+        float tileHeight = 50;
+
+        for (int row = 0; row < 9; row++) {
+            for (int column = 0; column < 17; column++) {
+                int tileValue = tileMap[row][column];
+
+                float upperLeftX = ((float) column) * tileWidth;
+                float upperLeftY = ((float) row) * tileHeight;
+                float lowerRightX = upperLeftX + tileWidth;
+                float lowerRightY = upperLeftY + tileHeight;
+
+                Color color = tileValue == 1 ? Colors.GRAY : Colors.WHITE;
+                rectangles.add(new Rectangle(new Vector2(upperLeftX, upperLeftY), new Vector2(lowerRightX, lowerRightY), color));
             }
         }
 
-        List<Rectangle> rectangles = DEBUG_CreateRectangles();
-        DEBUG_DrawPlayer(rectangles);
+        float playerWidth = 0.75f * tileWidth;
+        float playerHeight = tileHeight;
+        float playerLeft = GAMESTATE.getPlayer().position().getX() - 0.5f * playerWidth;
+        float playerTop = GAMESTATE.getPlayer().position().getY() - playerHeight;
 
-        drawRectangles(bytesPerPixel, pitch, rectangles);
+        Vector2 playerUpperLeft = new Vector2(playerLeft, playerTop);
+        Vector2 playerLowerRight = new Vector2(playerLeft + playerWidth, playerTop + playerHeight);
+        Rectangle player = new Rectangle(playerUpperLeft, playerLowerRight, Colors.RED);
+
+        rectangles.add(player);
+
+        drawRectangles(rectangles);
     }
 
-    private void drawRectangles(int bytesPerPixel, int pitch, List<Rectangle> rectangles) {
+    private void drawRectangles(List<Rectangle> rectangles) {
         for (Rectangle rectangle : rectangles) {
-            drawRectangle(bytesPerPixel, pitch, rectangle);
+            drawRectangle(rectangle);
         }
     }
 
@@ -95,9 +141,10 @@ public final class Game {
         float lowerRightX = playerPosition.getX() + 7;
         float lowerRightY = playerPosition.getY() + 7;
 
-        rectangles.add(new Rectangle(new Vector2(upperLeftX, upperLeftY), new Vector2(lowerRightX, lowerRightY), 0xFFFFFFFF));
-        rectangles.add(new Rectangle(new Vector2(upperLeftX + 1, upperLeftY + 1), new Vector2(lowerRightX - 1, lowerRightY - 1), 0x00000000));
-        rectangles.add(new Rectangle(new Vector2(upperLeftX + 2, upperLeftY + 2), new Vector2(lowerRightX - 2, lowerRightY - 2), 0x99999999));
+        Color playerColor = new Color(0.0f, 0.0f, 0.0f, 0);
+        rectangles.add(new Rectangle(new Vector2(upperLeftX, upperLeftY), new Vector2(lowerRightX, lowerRightY), playerColor));
+        rectangles.add(new Rectangle(new Vector2(upperLeftX + 1, upperLeftY + 1), new Vector2(lowerRightX - 1, lowerRightY - 1), playerColor));
+        rectangles.add(new Rectangle(new Vector2(upperLeftX + 2, upperLeftY + 2), new Vector2(lowerRightX - 2, lowerRightY - 2), playerColor));
     }
 
     private List<Rectangle> DEBUG_CreateRectangles() {
@@ -114,9 +161,9 @@ public final class Game {
                 int upperLeftY = squareHeight * y;
                 int lowerRightY = upperLeftY + squareHeight;
 
-                rectangles.add(new Rectangle(new Vector2(upperLeftX, upperLeftY), new Vector2(lowerRightX, lowerRightY), 0x66AB00FF));
-                rectangles.add(new Rectangle(new Vector2(upperLeftX + 1, upperLeftY + 1), new Vector2(lowerRightX - 1, lowerRightY - 1), 0x00000000));
-                rectangles.add(new Rectangle(new Vector2(upperLeftX + 2, upperLeftY + 2), new Vector2(lowerRightX - 2, lowerRightY - 2), 0x66AB00FF));
+                rectangles.add(new Rectangle(new Vector2(upperLeftX, upperLeftY), new Vector2(lowerRightX, lowerRightY), Colors.WHITE));
+                rectangles.add(new Rectangle(new Vector2(upperLeftX + 1, upperLeftY + 1), new Vector2(lowerRightX - 1, lowerRightY - 1), Colors.BLACK));
+                rectangles.add(new Rectangle(new Vector2(upperLeftX + 2, upperLeftY + 2), new Vector2(lowerRightX - 2, lowerRightY - 2), Colors.YELLOW));
             }
         }
         return rectangles;
