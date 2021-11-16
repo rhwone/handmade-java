@@ -101,7 +101,7 @@ internal void gameUpdateAndRender(GameInput *newInput)
         newInput->controller.isAnalog,
         newInput->controller.stickAverageX,
         newInput->controller.stickAverageY,
-        newInput->timeStep);
+        newInput->dT);
 
     globalJNIEnv->DeleteLocalRef(gameClass);
 }
