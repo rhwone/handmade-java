@@ -82,7 +82,6 @@ public final class Game {
             
         }
 
-
         //List<Rectangle> rectangles = DEBUG_CreateRectangles();
         //DEBUG_DrawPlayer(rectangles);
 
@@ -119,8 +118,10 @@ public final class Game {
 
         float playerWidth = 0.75f * tileWidth;
         float playerHeight = tileHeight;
+
         float playerLeft = playerPosition.X - 0.5f * playerWidth;
         float playerTop = playerPosition.Y - playerHeight;
+
 
         Vector2 playerUpperLeft = new Vector2(playerLeft, playerTop);
         Vector2 playerLowerRight = new Vector2(playerLeft + playerWidth, playerTop + playerHeight);
@@ -140,6 +141,7 @@ public final class Game {
 
     private void DEBUG_DrawPlayer(List<Rectangle> rectangles) {
         Vector2 playerPosition = GAMESTATE.getPlayer().position();
+
         float upperLeftX = playerPosition.X - 7;
         float upperLeftY = playerPosition.Y - 7;
         float lowerRightX = playerPosition.X + 7;
