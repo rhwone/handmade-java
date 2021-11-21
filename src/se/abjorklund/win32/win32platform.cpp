@@ -377,11 +377,15 @@ internal void
 win32DisplayBufferInWindow(win32_offscreen_buffer *Buffer,
                            HDC DeviceContext, int WindowWidth, int WindowHeight)
 {
+    PatBlt(DeviceContext, 0, 0, WindowWidth, WindowHeight, BLACKNESS);
+
+    int offsetX = 10;
+    int offsetY = 10;
     // NOTE(casey): For prototyping purposes, we're going to always blit
     // 1-to-1 pixels to make sure we don't introduce artifacts with
     // stretching while we are learning to code the renderer!
     StretchDIBits(DeviceContext,
-                  0, 0, Buffer->Width, Buffer->Height,
+                  offsetX, offsetY, Buffer->Width, Buffer->Height,
                   0, 0, Buffer->Width, Buffer->Height,
                   Buffer->memory,
                   &Buffer->Info,
@@ -919,7 +923,6 @@ int main(HINSTANCE instance,
                 GameInput input[2] = {};
                 GameInput *newInput = &input[0];
                 GameInput *oldInput = &input[1];
-                newInput->timeStep = targetSecondsPerFrame;
 
                 LARGE_INTEGER lastCounter = win32GetWallClock();
                 LARGE_INTEGER flipWallClock = win32GetWallClock();
@@ -936,6 +939,7 @@ int main(HINSTANCE instance,
                 uint64 lastCycleCount = __rdtsc();
                 while (globalRunning)
                 {
+                    newInput->dT = targetSecondsPerFrame;
                     // TODO(casey): Zeroing macro
                     // TODO(casey): We can't zero everything because the up/down state will
                     // be wrong!!!
@@ -1076,7 +1080,10 @@ int main(HINSTANCE instance,
                             newController->isConnected = false;
                         }
 
+
                         gameUpdateAndRender(newInput);
+
+
                         globalBackbuffer.memory = (void *)globalVideoBuffer;
 
                         LARGE_INTEGER audioWallClock = win32GetWallClock();

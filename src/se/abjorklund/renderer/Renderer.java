@@ -18,10 +18,10 @@ public final class Renderer {
         byte blue = (byte) Math.round(color.B() * 255);
         byte alpha = (byte) Math.round(color.A() * 255);
 
-        int minX = Math.round(rectangle.getUpperLeft().getX());
-        int minY = Math.round(rectangle.getUpperLeft().getY());
-        int maxX = Math.round(rectangle.getLowerRight().getX());
-        int maxY = Math.round(rectangle.getLowerRight().getY());
+        int minX = Math.round(rectangle.getUpperLeft().X);
+        int minY = Math.round(rectangle.getUpperLeft().Y);
+        int maxX = Math.round(rectangle.getLowerRight().X);
+        int maxY = Math.round(rectangle.getLowerRight().Y);
 
         if (minX < 0) {
             minX = 0;
