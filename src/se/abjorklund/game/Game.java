@@ -50,6 +50,7 @@ public final class Game {
         int pitch = width * bytesPerPixel;
 
 
+        Vector2 playerPosition = GAMESTATE.getPlayer().position();
         if (controller.isAnalog()) {
             // Analog controls
         } else {
@@ -58,26 +59,28 @@ public final class Game {
             float dPlayerY = 0.0f;
 
             if (controller.getMoveUp().endedDown()) {
-                dPlayerY = -5.0f;
+                dPlayerY = -1.0f;
             }
 
             if (controller.getMoveDown().endedDown()) {
-                dPlayerY = 5.0f;
+                dPlayerY = 1.0f;
             }
 
             if (controller.getMoveLeft().endedDown()) {
-                dPlayerX = -5.0f;
+                dPlayerX = -1.0f;
             }
 
             if (controller.getMoveRight().endedDown()) {
-                dPlayerX = 5.0f;
+                dPlayerX = 1.0f;
             }
-            float newPlayerX = GAMESTATE.getPlayer().position().getX() + dPlayerX;
-            float newPlayerY = GAMESTATE.getPlayer().position().getY() + dPlayerY;
-            GAMESTATE.getPlayer().position().setX(newPlayerX);
-            GAMESTATE.getPlayer().position().setY(newPlayerY);
-        }
+            dPlayerX *= 64.0f;
+            dPlayerY *= 64.0f;
 
+            float newPlayerX = GAMESTATE.getPlayer().position().X += dT*dPlayerX;
+            float newPlayerY = GAMESTATE.getPlayer().position().Y += dT*dPlayerY;
+
+            
+        }
 
         //List<Rectangle> rectangles = DEBUG_CreateRectangles();
         //DEBUG_DrawPlayer(rectangles);
@@ -115,8 +118,10 @@ public final class Game {
 
         float playerWidth = 0.75f * tileWidth;
         float playerHeight = tileHeight;
-        float playerLeft = GAMESTATE.getPlayer().position().getX() - 0.5f * playerWidth;
-        float playerTop = GAMESTATE.getPlayer().position().getY() - playerHeight;
+
+        float playerLeft = playerPosition.X - 0.5f * playerWidth;
+        float playerTop = playerPosition.Y - playerHeight;
+
 
         Vector2 playerUpperLeft = new Vector2(playerLeft, playerTop);
         Vector2 playerLowerRight = new Vector2(playerLeft + playerWidth, playerTop + playerHeight);
@@ -136,10 +141,11 @@ public final class Game {
 
     private void DEBUG_DrawPlayer(List<Rectangle> rectangles) {
         Vector2 playerPosition = GAMESTATE.getPlayer().position();
-        float upperLeftX = playerPosition.getX() - 7;
-        float upperLeftY = playerPosition.getY() - 7;
-        float lowerRightX = playerPosition.getX() + 7;
-        float lowerRightY = playerPosition.getY() + 7;
+
+        float upperLeftX = playerPosition.X - 7;
+        float upperLeftY = playerPosition.Y - 7;
+        float lowerRightX = playerPosition.X + 7;
+        float lowerRightY = playerPosition.Y + 7;
 
         Color playerColor = new Color(0.0f, 0.0f, 0.0f, 0);
         rectangles.add(new Rectangle(new Vector2(upperLeftX, upperLeftY), new Vector2(lowerRightX, lowerRightY), playerColor));
